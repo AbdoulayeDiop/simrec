@@ -93,5 +93,6 @@ if __name__ == "__main__":
             model = model.cross_val_fit(X, Y, n_splits=4, groups=groups)
             print(model.get_params())
 
+        model.similarity_pairs_ = similarity_pairs
         with open(os.path.join(args.outputdir, f"{model_name}.pickle"), "wb") as f:
             pickle.dump(model, f)

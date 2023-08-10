@@ -10,11 +10,11 @@ from sklearn.metrics import pairwise_distances
 
 class Metric():
     @abc.abstractmethod
-    def dist(self, x: npt.ArrayLike, y: npt.ArrayLike, **metric_params) -> float:
+    def dist(self, x: npt.ArrayLike, y: npt.ArrayLike) -> float:
         pass
 
     @abc.abstractmethod
-    def pairwise(self, X: npt.NDArray, Y: npt.NDArray = None, n_jobs=None, **metric_params) -> npt.NDArray:
+    def pairwise(self, X: npt.NDArray, Y: npt.NDArray = None, n_jobs=None) -> npt.NDArray:
         pass
 
     def fit(self, X):
