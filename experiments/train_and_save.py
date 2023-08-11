@@ -62,10 +62,10 @@ if __name__ == "__main__":
     sc = StandardScaler().fit(X)
     X = sc.transform(X)
 
-    model_names = ["LR", "KNN", "DTree", "MKNN", "MDTree", "RankNetMSE",
-                   "PR-LR", "PR-KNN", "PR-DTree"]  # , "RT-K", "RT-NDCG"
+    model_names = ["LR", "KNN", "DTree", "MKNN", "MDTree",
+                   "PR-LR", "PR-KNN", "PR-DTree"]  # , "RankNetMSE", "RT-K", "RT-NDCG"
     model_types = dict(zip(model_names, [
-                       "LR", "KNN", "DTree", "MKNN", "MDTree", "RankNet", "PR-LR", "PR-KNN", "PR-DTree"]))  # , "RT", "RT"
+                       "LR", "KNN", "DTree", "MKNN", "MDTree", "PR-LR", "PR-KNN", "PR-DTree"]))  # , "RankNet", "RT", "RT"
 
     default_params = {
         "RT-K": {"min_samples_split": 3, "n_jobs": -1},
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         "RankNetMSE": {
             "input_dim": X.shape[1],
             'output_dim': Y.shape[1],
-            'hidden_layers': (1024, 2048, 1024),
+            'hidden_layers': (1024, 1024, 512),
             'device': device
         }
     }
