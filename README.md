@@ -1,5 +1,5 @@
 # simrec
-SIMilarity measures RECommendation in mixed data clustering.
+**SIM**ilarity measures **REC**ommendation in mixed data clustering.
 
 This repository implements a meta-learning approach for similarity measures recommendation. It mainly consist in building, for each considered mixed data clustering algorithm, a machine learning model able to predict the ranking of similarity measures pairs according to the characteristics of the input dataset. These characteristics are called **meta-features**. 
 
