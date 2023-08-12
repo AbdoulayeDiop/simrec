@@ -60,39 +60,44 @@ if __name__ == "__main__":
     groups = np.array([dataset_id.split("_")[0] for dataset_id in ids])
 
     sc = StandardScaler().fit(X)
+    print(sc.get_params())
     X = sc.transform(X)
 
-    model_names = ["LR", "KNN", "DTree", "MKNN", "MDTree",
-                   "PR-LR", "PR-KNN", "PR-DTree"]  # , "RankNetMSE", "RT-K", "RT-NDCG"
-    model_types = dict(zip(model_names, [
-                       "LR", "KNN", "DTree", "MKNN", "MDTree", "PR-LR", "PR-KNN", "PR-DTree"]))  # , "RankNet", "RT", "RT"
+    with open(os.path.join(args.outputdir, f"scaler.pickle"), "wb") as f:
+        pickle.dump(sc, f)
 
-    default_params = {
-        "RT-K": {"min_samples_split": 3, "n_jobs": -1},
-        "RT-NDCG": {"min_samples_split": 3, 'rank_sim': 'ndcg', "n_jobs": -1},
-        "RankNetMSE": {
-            "input_dim": X.shape[1],
-            'output_dim': Y.shape[1],
-            'hidden_layers': (1024, 1024, 512),
-            'device': device
-        }
-    }
+    # model_names = ["LR", "KNN", "DTree", "MKNN", "MDTree", "RankNetMSE",
+    #                "PR-LR"]  # , "RT-K", "RT-NDCG", "PR-KNN", "PR-DTree"
+    # model_types = dict(zip(model_names, [
+    #                    "LR", "KNN", "DTree", "MKNN", "MDTree", "RankNet", "PR-LR"]))  # , "RT", "RT", "PR-KNN", "PR-DTree"
 
-    for model_name in model_names:
-        print()
-        print(f"Training of model: {model_name}")
-        model = ALL_MODELS[model_types[model_name]]() if model_name not in default_params \
-            else ALL_MODELS[model_types[model_name]](**default_params[model_name])
-        start = time.time()
-        if model_name in ["RankNetMSE"]:
-            model = model.fit(X, Y, batch_size=64, epochs=150)
-        elif model_name in ["LR", "PR-LR", "RT-K", "RT-NDCG"]:
-            model = model.fit(X, Y)
-        else:
-            print("Grid Search CV...")
-            model = model.cross_val_fit(X, Y, n_splits=4, groups=groups)
-            print(model.get_params())
+    # default_params = {
+    #     "RT-K": {"min_samples_split": 3, "n_jobs": -1},
+    #     "RT-NDCG": {"min_samples_split": 3, 'rank_sim': 'ndcg', "n_jobs": -1},
+    #     "RankNetMSE": {
+    #         "input_dim": X.shape[1],
+    #         'output_dim': Y.shape[1],
+    #         'hidden_layers': (1024, 1024, 512),
+    #         'device': device
+    #     }
+    # }
 
-        model.similarity_pairs_ = similarity_pairs
-        with open(os.path.join(args.outputdir, f"{model_name}.pickle"), "wb") as f:
-            pickle.dump(model, f)
+    # for model_name in model_names:
+    #     print()
+    #     print(f"Training of model: {model_name}")
+    #     model = ALL_MODELS[model_types[model_name]]() if model_name not in default_params \
+    #         else ALL_MODELS[model_types[model_name]](**default_params[model_name])
+    #     start = time.time()
+    #     if model_name in ["RankNetMSE"]:
+    #         model = model.fit(X, Y, batch_size=64, epochs=150)
+    #     elif model_name in ["LR", "PR-LR", "RT-K", "RT-NDCG"]:
+    #         model = model.fit(X, Y)
+    #     else:
+    #         print("Grid Search CV...")
+    #         model = model.cross_val_fit(X, Y, n_splits=4, groups=groups)
+    #         print(model.get_params())
+
+    #     model.similarity_pairs_ = similarity_pairs
+    #     model.meta_features_ = meta_features
+    #     with open(os.path.join(args.outputdir, f"{model_name}.pickle"), "wb") as f:
+    #         pickle.dump(model, f)

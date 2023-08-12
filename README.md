@@ -27,27 +27,42 @@ import numpy as np
 import pickle
 from mixed_metrics import get_valid_similarity_pairs
 from meta_features import compute_meta_features
+from sklearn.preprocessing import minmax_scale
 
 # load the model
-with open("models/KMedoids/MDTree.pickle", "rb") as f:
-    sim_ranker = pickle.load(f)
+with open("models/KMedoids/KNN.pickle", "rb") as f:
+    ranker = pickle.load(f)
+
+# load the scaler
+with open("models/KMedoids/scaler.pickle", "rb") as f:
+    scaler = pickle.load(f)
 
 # load your dataset. Here we create a random mixed dataset with 10 numeric attributes and 5 categorical attributes
-Xnum = np.random.rand(size=(200, 10))
+Xnum = np.random.rand(200, 10)
 Xcat = np.random.randint(8, size=(200, 5))
 
-# get the valid similarity measures pairs for your dataset
-valid_pairs = get_valid_similarity_pairs(Xnum, Xcat)
+# Important: Normalize the numeric part before computing the meta-features or performing clustering
+Xnum = minmax_scale(Xnum)
 
 # create the meta-features vector of your dataset
 mf_vector = compute_meta_features(Xnum, Xcat)
 
 # predict the ranks of all similarity measures pairs
-y_pred = ranker.predict([mf_vector])[0]
+y_pred = ranker.predict(scaler.transform([mf_vector]))[0]
 
 # get a ranked list of similarity measures pairs
 ranked_pairs = ranker.similarity_pairs_[np.argsort(-y_pred)]
 
 # keep only valid similarity measures pairs for your dataset
-ranked_pairs = [sim_pair for sim_sim in ranked_pairs if sim in valid_pairs]
+valid_pairs = get_valid_similarity_pairs(Xnum, Xcat)
+ranked_pairs = [sim_pair for sim_pair in ranked_pairs if sim_pair in valid_pairs]
+
+# show the top-5 similarity measures pairs
+print(ranked_pairs[:5])
+```
+
+Here is the output:
+
+``` python
+['canberra_russellrao', 'canberra_eskin', 'canberra_kulsinski', 'canberra_hamming', 'canberra_dice']
 ```

@@ -44,23 +44,24 @@ class MixedMetric(abc.ABC):
         return True
     
 class WeightedAverage(MixedMetric):
-    def __init__(self, pair_name=None, w=0.5, num_metric="euclidean", cat_metric="manhattan", num_metric_params={}, cat_metric_params={}) -> None:
+    def __init__(self, pair_name=None, w=0.5, num_metric="euclidean", cat_metric="hamming", num_metric_params={}, cat_metric_params={}) -> None:
         super().__init__()
         if pair_name is not None:
-            if re.match(r"[a-z\-]+_[a-z\-]") is None:
+            if re.match(r"[a-z\-]+_[a-z\-]", pair_name) is None:
                 raise(Exception(f"Not known similarity measures pair ({pair_name})"))
             num_metric, cat_metric = pair_name.split("_")
             if num_metric not in base_metrics.get_available_metrics():
                 raise(Exception(f"Not known numeric similarity measure ({num_metric}) in similarity measures pair ({pair_name})"))
             if cat_metric not in base_metrics.get_available_metrics(data_type="categorical") +\
-                  base_metrics.get_available_metrics(data_type="binary"):
+                base_metrics.get_available_metrics(data_type="binary"):
                 raise(Exception(f"Not known categorical similarity measure ({cat_metric}) in similarity measures pair ({pair_name})"))
             self.num_metric = base_metrics.get_metric(metric=num_metric, **num_metric_params)
             self.cat_metric = base_metrics.get_metric(metric=cat_metric, **cat_metric_params)
         else:
             if num_metric not in base_metrics.get_available_metrics():
                 raise(Exception(f"Not known numeric similarity measure ({num_metric})"))
-            if cat_metric not in base_metrics.get_available_metrics(data_type="categorical"):
+            if cat_metric not in base_metrics.get_available_metrics(data_type="categorical") +\
+                base_metrics.get_available_metrics(data_type="binary"):
                 raise(Exception(f"Not known categorical similarity measure ({cat_metric})"))
             self.num_metric = base_metrics.get_metric(metric=num_metric, **num_metric_params)
             self.cat_metric = base_metrics.get_metric(metric=cat_metric, **cat_metric_params)
@@ -70,6 +71,7 @@ class WeightedAverage(MixedMetric):
         numeric = [i for i in range(X.shape[1]) if i not in categorical]
         self.num_metric = self.num_metric.fit(X[:, numeric])
         self.cat_metric = self.cat_metric.fit(X[:, categorical])
+        return self
     
     def dist(self, x: npt.ArrayLike, y: npt.ArrayLike, categorical=None) -> float:
         numeric = [i for i in range(len(x)) if i not in categorical]
@@ -79,7 +81,7 @@ class WeightedAverage(MixedMetric):
     def pairwise(self, X: npt.NDArray, Y: npt.NDArray = None, n_jobs=None, categorical=None) -> npt.NDArray:
         numeric = [i for i in range(X.shape[1]) if i not in categorical]
         return (1-self.w)*self.num_metric.pairwise(X[:, numeric], Y if Y is None else Y[:, numeric]) + \
-            self.w*self.cat_metric.dist(X[:, categorical], Y if Y is None else Y[:, categorical])
+            self.w*self.cat_metric.pairwise(X[:, categorical], Y if Y is None else Y[:, categorical])
     
     def is_valid_data(self, x, categorical=None):
         x = np.array(x)
@@ -90,3 +92,8 @@ class WeightedAverage(MixedMetric):
             numeric = [i for i in range(x.shape[1]) if i not in categorical]
             return self.num_metric.is_valid_data(x[:, numeric]) and self.num_metric.is_valid_data(x[:, categorical])
         
+if __name__ == "__main__":
+    Xnum = np.random.rand(200, 10)
+    Xcat = np.random.randint(8, size=(200, 5))
+    X = np.c_[Xnum, Xcat]
+    print(WeightedAverage().pairwise(X, categorical=np.arange(Xnum.shape[1], X.shape[1])))
