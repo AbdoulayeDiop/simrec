@@ -59,7 +59,24 @@ augmented_id, meta-feature_1, ..., <meta-feature_61>
 222_1, 0.1, ..., 0.005
 ```
 ### Computing similarity measures pairs performances
-For each considered clustering algorithm (IN PROGRESS...)
+For each considered clustering algorithm, we define the performance of a similarity measures pair $s$ on a given a dataset $\mathcal{D}$ as the highest accuracy (i.e. with the optimal parameters of the algorithm) we can achive on $\mathcal{D}$ using $s$. 
 
-### Training and evaluation of the meta-learners
-IN PROGRESS...
+The script [benchmark.py](benchmark.py/) allows to run a given clustering algorithm on all dataset, with all similarity measures pairs while searching for the optimal parameters at each run. It outputs 2 JSON files, one containing the performances of the similarity measures pairs for for each dataset and another containing.
+
+Here is an example with the HAverage algorithm:
+``` bash
+python benchmark.py -i data/infos_found_datasets.pickle -s data/selected_datasets.csv -o data -a haverage -e acc
+```
+
+- `-a` option specifies the clustering algorithm. The following algorithms are availble: [`haverage`, `fasterpam`, `sfkm`, `kprototypes`, `spectral`] for Hierarchical Clustering with average linkage, FasterPAM and SFKM versions of K-Medoids, K-Prototypes and Spectral Clustering respectively.
+
+- `-e` option corresponds to the clustering evaluation metric from [`acc`, `ari`, `sil`] for Accuracy, Adjusted Rand Index and Silhouette scores respectively.
+
+The obtained results for `haverage`, `fasterpam` version of K-Medoids are available in [data/HAverage/](data/HAverage/) and [data/KMedoids/](data/KMedoids/) respectively.
+
+## Training and evaluation of the meta-learners
+Once the meta-datasets are created, They can be used to train the meta-learners. The code for the training and evaluation of the meta-learners using a k-fold procedure is given in [train_and_eval.py](train_and_eval.py). Obtained results for the two considered algorithms can be found in [data/HAverage/](data/HAverage/) and [data/KMedoids/](data/KMedoids/) respectively. The results contain the predictions of the meta-learners on each dataset when the dataset was in the test fold. So, they allow to evaluate the generalization performances of the meta-learners. 
+
+The performances showed in the paper are based on these results. By the way you can reproduce all the graphics pesented in tha paper using the notebook [paper.ipynb](paper.ipynb).
+
+Finally we made the meta-learners available in [this folder](../models/), but before making them available, they have been re-trained on the entire datasets (see [train_and_save.py](train_and_save.py)).

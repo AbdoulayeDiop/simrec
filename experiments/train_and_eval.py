@@ -32,7 +32,8 @@ if __name__ == "__main__":
 
     import torch
     from sklearn.model_selection import GroupKFold
-    sys.path.append("..")
+
+    sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
     from meta_learners import ALL_MODELS
 
     np.random.seed(12333)

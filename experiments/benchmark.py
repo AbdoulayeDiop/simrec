@@ -17,7 +17,7 @@ from sklearn.cluster import AgglomerativeClustering, spectral_clustering
 from sklearn.preprocessing import OneHotEncoder, minmax_scale
 from utils import get_score, get_unsupervised_score
 
-sys.path.append("..")
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 import base_metrics
 
 gamma_values = np.concatenate((np.linspace(0, 1, 6), np.arange(2, 10)))
@@ -137,7 +137,6 @@ def run_sc(D, n_clusters, sigma):
         clusters = spectral_clustering(S, n_clusters=n_clusters, random_state=0)
     except:
         print(f"Error : spectral -> sigma={sigma}")
-        # print("Unexpected error:", sys.exc_info()[0])
     return clusters
 
 
@@ -145,7 +144,6 @@ def optimize_sc(Ds, y, n_clusters, eval_metric):
     Dnum, Dcat = Ds
     def black_box_function(alpha, sigma):
         D = (1 - alpha)*Dnum + alpha*Dcat
-        # D[np.abs(D)<1e-9] = 0
         clusters = run_sc(D, n_clusters, sigma)
         if clusters is None : return -1
         if eval_metric=="sil":
@@ -336,7 +334,6 @@ def benchmark(id_, data, results_file, algorithm="ac", eval_metric = "acc"):
     else:
         tempdir = tempfile.TemporaryDirectory(dir="/homedir/adiop/tmp/")
         for num_metric in base_metrics.get_available_metrics(data_type="numeric"):
-            # print(f"{id_}, {num_metric}", flush=True)
             Dnum = compute_dissim(Xnum, num_metric)
             if Dnum is not None:
                 computed = os.listdir(tempdir.name)
@@ -351,9 +348,6 @@ def benchmark(id_, data, results_file, algorithm="ac", eval_metric = "acc"):
                             pickle.dump(Dcat, f)
                     if Dcat is not None:
                         result[f"{num_metric}_{cat_metric}"] = run_with_pairwise_dist(Dnum, Dcat)
-                    # Dcat = compute_dissim(Xcat, cat_metric)
-                    # if Dcat is not None:
-                    #     result[f"{num_metric}_{cat_metric}"] = run_with_pairwise_dist(Dnum, Dcat)
                 for bin_metric in base_metrics.get_available_metrics(data_type="binary"):
                     filename = os.path.join(tempdir.name, bin_metric)
                     if bin_metric in computed:
@@ -366,14 +360,10 @@ def benchmark(id_, data, results_file, algorithm="ac", eval_metric = "acc"):
                             f.flush()
                     if Dcat is not None:
                         result[f"{num_metric}_{bin_metric}"] = run_with_pairwise_dist(Dnum, Dcat)
-                    # Dcat = compute_dissim(Xdummy, bin_metric)
-                    # if Dcat is not None:
-                    #     result[f"{num_metric}_{bin_metric}"] = run_with_pairwise_dist(Dnum, Dcat)
 
     end = time.time()
     duration = None
     gc.collect()
-    # print(result, flush=True)
     if len(result) > 0:
         duration = end - start
         time_file = os.path.join(os.path.dirname(results_file), f"benchmark_duration_{args.algorithm}_{args.evalmetric}_augmented_grid.json")
@@ -397,9 +387,6 @@ def benchmark(id_, data, results_file, algorithm="ac", eval_metric = "acc"):
                 json.dump(times, f, indent=4, ensure_ascii=False)
                 f.flush()
             del times
-        # with open(os.path.join(result_dir, id_), "w", encoding="utf-8") as f:
-        #     json.dump(result, f, indent=4, ensure_ascii=False)
-        #     f.flush()
     return duration
 
 
@@ -452,7 +439,7 @@ if __name__=="__main__":
 
     import openml
     parser = argparse.ArgumentParser(description='Benchmark data set data sets')
-    parser.add_argument("-i", "--infosfile", help="Path to the file containing identification of data sets to benchmarch")
+    parser.add_argument("-i", "--infosfile", help="Path to the file containing information about the OpenML data sets to benchmarch")
     parser.add_argument("-s", "--selected", help="Path to the file containing ids of selected data sets", default=None)
     parser.add_argument("-o", "--outdir", help="The directory where results will be saved")
     parser.add_argument("-a", "--algorithm", help="The clustering algorithm that will be used")
