@@ -67,10 +67,9 @@ if __name__ == "__main__":
     with open(os.path.join(args.outputdir, f"scaler.pickle"), "wb") as f:
         pickle.dump(sc, f)
 
-    model_names = ["LR", "KNN", "DTree", "MKNN", "MDTree", "RankNetMSE",
-                   "PR-LR"]  # , "RT-K", "RT-NDCG", "PR-KNN", "PR-DTree"
+    model_names = ["LR", "KNN", "DTree", "MKNN", "MDTree"]  # , "RT-K", "RT-NDCG", "PR-KNN", "PR-DTree", "RankNetMSE", "PR-LR"
     model_types = dict(zip(model_names, [
-                       "LR", "KNN", "DTree", "MKNN", "MDTree", "RankNet", "PR-LR"]))  # , "RT", "RT", "PR-KNN", "PR-DTree"
+                       "LR", "KNN", "DTree", "MKNN", "MDTree"]))  # , "RT", "RT", "PR-KNN", "PR-DTree", "RankNet", "PR-LR"
 
     default_params = {
         "RT-K": {"min_samples_split": 3, "n_jobs": -1},
