@@ -23,7 +23,7 @@ def handle_na(frame, drop_first=True, min_samples_after_drop=0.8, max_nan_per_at
             df = df.drop(columns=column)
             print(
                 f"column {column} dropped from data set because it contains more than \
-                    {int(max_nan_per_attributes*100)}% of nan values ({int(nan_portion*100)}%)")
+{int(max_nan_per_attributes*100)}% of nan values ({int(nan_portion*100)}%)")
     droped_df = df.dropna()
     if drop_first and droped_df.shape[0] > min_samples_after_drop*df.shape[0]:
         df = droped_df
@@ -63,7 +63,7 @@ def load_openml_data(data_id, data_type="mixed"):
         num_columns = X.select_dtypes(include=["number"]).columns.values
         cat_columns = [col for col in X.columns if col not in num_columns]
         if len(num_columns) == 0 or len(cat_columns) == 0:
-            print(f"dataset with id {id_} is suposed to be mixed but got \
+            print(f"dataset with id {data_id} is suposed to be mixed but got \
 {len(num_columns)} numeric attributes and {len(cat_columns)} \
 categorical attributes after handling nan values"
                   )
@@ -113,7 +113,6 @@ categorical attributes after handling nan values"
 
 def accuracy(labels, predicted_labels):
     cm = confusion_matrix(labels, predicted_labels)
-
     def _make_cost_m(cm):
         s = np.max(cm)
         return (- cm + s)
@@ -148,8 +147,8 @@ def get_unsupervised_score(X, predicted_labels, eval_metric="sil", **kwargs):
 EVAL_METRICS = ["acc", "ari", "purity"]
 
 if __name__ == "__main__":
-    data_id = 29
-    data = load_openml_data(data_id)
+    ID = 29
+    data = load_openml_data(ID)
     print(data["numeric_attributes"])
     print(data["categorical_attributes"])
     print(len(data["samples"]))
