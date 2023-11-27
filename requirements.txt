@@ -1,0 +1,14 @@
+filelock
+joblib
+# kmedoids
+kmodes
+matplotlib
+numpy
+openml
+pandas
+# pytorchltr
+scikit_learn
+scipy
+# torch==1.12.1+cu116
+tqdm
+ipykernel
