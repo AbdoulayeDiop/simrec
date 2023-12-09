@@ -1,12 +1,12 @@
 filelock
 joblib
-# kmedoids
+kmedoids
 kmodes
 matplotlib
 numpy
 openml
 pandas
-# pytorchltr
+pytorchltr
 scikit_learn
 scipy
 # torch==1.12.1+cu116
