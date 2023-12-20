@@ -199,7 +199,7 @@ if __name__=="__main__":
     OUTPUT_FILE = os.path.join(args.outputdir, "if_meta_features.csv")
     TIME_FILE = os.path.join(args.outputdir, "if_meta_features_times.json")
 
-    meta_df = pd.DataFrame()
+    meta_df = None
     if os.path.isfile(OUTPUT_FILE):
         meta_df = pd.read_csv(OUTPUT_FILE, index_col="id")
     times = {}
@@ -211,7 +211,7 @@ if __name__=="__main__":
     if args.datasetsdir is not None:
         filenames += [os.path.join(args.datasetsdir, filename)
                         for filename in os.listdir(args.datasetsdir)
-                        if filename.split('.')[0] not in meta_df.index]
+                        if filename.split('.')[0] not in (meta_df.index if meta_df is not None else [])]
 
     datasets = []
     for filename in filenames:
@@ -240,9 +240,10 @@ if __name__=="__main__":
     meta_X = np.array(meta_X)
     attribute_names = np.arange(meta_X.shape[1])
 
-    meta_df = pd.concat([
+    new_meta_df = pd.DataFrame(columns=attribute_names, data=meta_X, index=ids)
+    meta_df = new_meta_df if meta_df is None else pd.concat([
         meta_df,
-        pd.DataFrame(columns=attribute_names, data=meta_X, index=ids)
+        new_meta_df
     ])
     meta_df.index.name = "id"
     print(meta_df.head())
