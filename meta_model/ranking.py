@@ -26,9 +26,9 @@ def mse(y_true, y_pred):
     return np.mean((y_true[y_true > 0]-y_pred[y_true > 0])**2)
 
 
-scorer = make_scorer(lambda yt, yp: np.mean(ndcg(yt, yp, p=5)))
-# scorer = make_scorer(lambda yt, yp: np.mean(
-#     yt[np.arange(yt.shape[0]), np.argmax(yp, axis=1)]))
+# scorer = make_scorer(lambda yt, yp: np.mean(ndcg(yt, yp, p=5)))
+scorer = make_scorer(lambda yt, yp: np.mean(
+    yt[np.arange(yt.shape[0]), np.argmax(yp, axis=1)]))
 # scorer = make_scorer(mse, greater_is_better=False)
 
 
