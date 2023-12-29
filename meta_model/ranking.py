@@ -21,6 +21,7 @@ from torch.optim import Adam
 from tqdm import tqdm
 from utils import ndcg
 from ranking_tree import RankingTree
+from scipy.stats import wasserstein_distance
 
 def mse(y_true, y_pred):
     return np.mean((y_true[y_true > 0]-y_pred[y_true > 0])**2)
@@ -36,7 +37,7 @@ class LRRanker(linear.ElasticNet):
     def __init__(self, alpha=1, l1_ratio=0.5, **params) -> None:
         super().__init__(alpha=alpha, l1_ratio=l1_ratio, **params)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'alpha': [0.1, 0.2, 0.4, 0.6, 0.8, 1, 1.5, 2, 5, 10],
             'l1_ratio': np.linspace(0.1, 1, 10),
@@ -49,6 +50,8 @@ class LRRanker(linear.ElasticNet):
                               error_score='raise',
                               n_jobs=n_jobs
                               ).fit(X, Y, groups=groups)
+        if return_cv_scores:
+            return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
 
 
@@ -56,10 +59,10 @@ class KNNRanker(KNeighborsRegressor):
     def __init__(self, n_neighbors=5, metric="euclidean", weights="uniform", **params) -> None:
         super().__init__(n_neighbors=n_neighbors, metric=metric, weights=weights, **params)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
-            'metric': ["euclidean", "manhattan", "cosine"],
+            'metric': ["euclidean", "manhattan", "cosine", wasserstein_distance],
             'weights': ["uniform", "distance"]
         }
         gridcv = GridSearchCV(self, parameters,
@@ -70,6 +73,8 @@ class KNNRanker(KNeighborsRegressor):
                               error_score='raise',
                               n_jobs=n_jobs
                               ).fit(X, Y, groups=groups)
+        if return_cv_scores:
+            return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
 
 
@@ -78,7 +83,7 @@ class DTreeRanker(DecisionTreeRegressor):
         super().__init__(min_samples_leaf=min_samples_leaf,
                          max_depth=max_depth, max_features=max_features, **params)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10],
@@ -92,6 +97,8 @@ class DTreeRanker(DecisionTreeRegressor):
                               error_score='raise',
                               n_jobs=n_jobs
                               ).fit(X, Y, groups=groups)
+        if return_cv_scores:
+            return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
 
 
@@ -109,7 +116,7 @@ class NDCGDTreeRanker(BaseEstimator):
     def predict(self, X):
         return self.model.predict(X)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'min_samples_split': [v for v in [2, 5, 10, 20] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10]
@@ -122,6 +129,8 @@ class NDCGDTreeRanker(BaseEstimator):
                               error_score='raise',
                               n_jobs=n_jobs
                               ).fit(X, Y, groups=groups)
+        if return_cv_scores:
+            return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
 
 
@@ -130,7 +139,7 @@ class RFRanker(RandomForestRegressor):
         super().__init__(n_estimators=n_estimators, min_samples_leaf=min_samples_leaf,
                          max_depth=max_depth, max_features=max_features, **params)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'n_estimators': [50, 100, 200],
             'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
@@ -145,6 +154,8 @@ class RFRanker(RandomForestRegressor):
                               error_score='raise',
                               n_jobs=n_jobs
                               ).fit(X, Y, groups=groups)
+        if return_cv_scores:
+            return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
 
 
@@ -196,7 +207,7 @@ class MDTree(BaseEstimator, MultipleRegressors):
             **self.other_params
         )
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10],
@@ -210,6 +221,8 @@ class MDTree(BaseEstimator, MultipleRegressors):
                               error_score='raise',
                               n_jobs=n_jobs
                               ).fit(X, Y, groups=groups)
+        if return_cv_scores:
+            return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
 
 
@@ -228,7 +241,7 @@ class MKNN(BaseEstimator, MultipleRegressors):
             **self.other_params
         )
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'metric': ["euclidean", "manhattan", "cosine"],
@@ -242,6 +255,8 @@ class MKNN(BaseEstimator, MultipleRegressors):
                               error_score='raise',
                               n_jobs=n_jobs
                               ).fit(X, Y, groups=groups)
+        if return_cv_scores:
+            return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
 
 
@@ -323,7 +338,7 @@ class PairwiseKNNRanker(BaseEstimator, PairwiseRanker):
             **self.other_params
         )
 
-    # def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=1):
+    # def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=1):
     #     parameters = {
     #         'n_neighbors': [1, 3, 5, 8, 12, 18, 25],
     #         'metric': ["euclidean", "manhattan", "cosine"],
@@ -357,7 +372,7 @@ class PairwiseKNNRanker(BaseEstimator, PairwiseRanker):
     #     model = model.fit(X[train_index], Y[train_index])
     #     return model
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=8):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=8):
         parameters = {
             'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'metric': ["euclidean", "manhattan", "cosine"],
@@ -371,6 +386,8 @@ class PairwiseKNNRanker(BaseEstimator, PairwiseRanker):
                               error_score='raise',
                               n_jobs=n_jobs
                               ).fit(X, Y, groups=groups)
+        if return_cv_scores:
+            return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
 
 
@@ -389,7 +406,7 @@ class PairwiseDTreeRanker(BaseEstimator, PairwiseRanker):
             **self.other_params
         )
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=15):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=15):
         parameters = {
             'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10],
@@ -403,6 +420,8 @@ class PairwiseDTreeRanker(BaseEstimator, PairwiseRanker):
                               error_score='raise',
                               n_jobs=n_jobs
                               ).fit(X, Y, groups=groups)
+        if return_cv_scores:
+            return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
 
 

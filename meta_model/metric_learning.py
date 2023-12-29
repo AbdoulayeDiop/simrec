@@ -38,6 +38,7 @@ class ContrastiveML(nn.Module):
                 "distance_dissimilar": [],
             }
         }
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
         for epoch in range(epochs):
             print(f"Epoch {epoch+1}/{epochs}:", end=" ")
             losses = []
@@ -70,12 +71,12 @@ class ContrastiveML(nn.Module):
             print(f"dis={history['train']['distance_dissimilar'][-1]:.3g}", end=", " if val_loader else "\n")
 
             if val_loader is not None:
-                losses = []
-                ds = []
-                ns = 0
-                dd = []
-                nd = 0
                 with torch.no_grad():
+                    losses = []
+                    ds = []
+                    ns = 0
+                    dd = []
+                    nd = 0
                     for X1, X2, y in val_loader:
                         mapping1 = self.forward(X1)
                         mapping2 = self.forward(X2)
@@ -93,6 +94,7 @@ class ContrastiveML(nn.Module):
                     print(f"val_loss={history['val']['loss'][-1]:.3g}", end=" ")
                     print(f"sim={history['val']['distance_similar'][-1]:.3g}", end=" ")
                     print(f"dis={history['val']['distance_dissimilar'][-1]:.3g}")
+                scheduler.step(np.mean(losses))
 
             if checkpoint_epochs != None and epoch % checkpoint_epochs == 0:
                 torch.save(self, os.path.join(checkpoint_dir, f"checkpoint{epoch}.pth"))
@@ -432,17 +434,6 @@ if __name__ == "__main__":
     )
     network.to(device)
 
-    decoder = nn.Sequential(
-        nn.Linear(2, 4),
-        nn.ReLU(),
-        nn.Linear(4, 8),
-        nn.ReLU(),
-        nn.Linear(8, 16),
-        nn.ReLU(),
-        nn.Linear(16, X.shape[1])
-    )
-    decoder.to(device)
-
     model = ContrastiveML(network, margin=1)
     optimizer = Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
     model.fit(train_loader, optimizer, epochs=10, val_loader=val_loader)
@@ -460,4 +451,5 @@ if __name__ == "__main__":
     plt.scatter(mapping_train[:, 0], mapping_train[:, 1], marker='o', s=5, c=y_train, alpha=0.5)
     plt.scatter(mapping_val[:, 0], mapping_val[:, 1], marker='^', s=5, c=y_val)
     plt.tight_layout()
+    plt.savefig("fig.png")
     plt.show()

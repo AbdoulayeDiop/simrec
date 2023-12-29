@@ -203,7 +203,7 @@ def eval_kprototypes(Xnum, Xcat, y, n_clusters, num_metric, cat_metric):
     #             })
     # return result
     mem = (Xnum.itemsize*Xnum.size + Xcat.itemsize*Xcat.size)*2
-    n_jobs = min(64, int(16e9/mem))
+    n_jobs = min(128, int(16e9/mem))
     clusters = Parallel(n_jobs=n_jobs)(
         delayed(kprototypes)(
             Xnum, Xcat, n_clusters,
