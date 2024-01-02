@@ -14,13 +14,13 @@ The trained meta-learners can then be used on new datasets for similarity measur
 
 - Needed materials in order to reproduce these two steps for any clustering algorithm (including the ones we already considered). Find more details in the folder [experiments](experiments/).
 - Several meta-learners already trained (you can find in the folder [models](models/)) that can be used directly for similarity measures recommendation. For now, these meta-learners are available for two mixed data clustering algorithms:
-    - K-Medoids
+    - K-Prototypes
     - Hierarchical clustering with average linkage
 
 A detailed example for practical usage of these meta-learners is available in the [example notebook](example.ipynb).
 
 ## A simple example
-Here is an example of using a pre-trained meta-learner (_MDTRee_) in order to predict the ranking of similarity measures pairs on a new dataset for K-Medoids algorithm.
+Here is an example of using a pre-trained meta-learner (_KNN_) in order to predict the ranking of similarity measures pairs on a new dataset for K-Prototypes algorithm.
 
 ``` python
 import numpy as np
@@ -30,11 +30,11 @@ from meta_features import compute_meta_features
 from sklearn.preprocessing import minmax_scale
 
 # load the model
-with open("models/KMedoids/KNN.pickle", "rb") as f:
+with open("models/KPrototypes/KNN.pickle", "rb") as f:
     ranker = pickle.load(f)
 
 # load the scaler
-with open("models/KMedoids/scaler.pickle", "rb") as f:
+with open("models/KPrototypes/scaler.pickle", "rb") as f:
     scaler = pickle.load(f)
 
 # load your dataset. Here we create a random mixed dataset with 10 numeric attributes and 5 categorical attributes
@@ -64,5 +64,5 @@ print(ranked_pairs[:5])
 Here is the output:
 
 ``` python
-['canberra_russellrao', 'canberra_eskin', 'canberra_kulsinski', 'canberra_hamming', 'canberra_dice']
+['mahalanobis_of', 'mahalanobis_russellrao', 'mahalanobis_hamming', 'mahalanobis_kulsinski', 'divergence_of']
 ```
