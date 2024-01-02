@@ -72,11 +72,13 @@ python benchmark.py -i data/infos_found_datasets.pickle -s data/selected_dataset
 
 - `-e` option corresponds to the clustering evaluation metric from [`acc`, `ari`, `sil`] for Accuracy, Adjusted Rand Index and Silhouette scores respectively.
 
-The obtained results for `haverage`, `fasterpam` version of K-Medoids are available in [data/HAverage/](data/HAverage/) and [data/KMedoids/](data/KMedoids/) respectively.
+The obtained results for `haverage`, `fasterpam` version of K-Medoids are available in [data/HAverage/](data/HAverage/) and [data/KPrototypes/](data/KPrototypes/) respectively.
 
 ## Training and evaluation of the meta-learners
-Once the meta-datasets are created, They can be used to train the meta-learners. The code for the training and evaluation of the meta-learners using a k-fold procedure is given in [train_and_eval.py](train_and_eval.py). Obtained results for the two considered algorithms can be found in [data/HAverage/](data/HAverage/) and [data/KMedoids/](data/KMedoids/) respectively. The results contain the predictions of the meta-learners on each dataset when the dataset was in the test fold. So, they allow to evaluate the generalization performances of the meta-learners. 
+Once the meta-datasets are created, They can be used to train the meta-learners. The code for the training and evaluation of the meta-learners using a Leave-One-Out (LOO) procedure is given in [train_and_eval.py](train_and_eval.py). In this procedure, we realize $N_{OD}$ (the number of original datasets) iterations, such that at each iteration, one original dataset is selected for testing while all remaining datasets except the augmentations of the selected dataset, are used for training. During the training, the hyper-parameters of the different meta-learners are defined using a grid search
+cross-validation strategy.
 
-The performances showed in the paper are based on these results. By the way you can reproduce all the graphics pesented in tha paper using the notebook [paper.ipynb](paper.ipynb).
+Obtained results for the two considered algorithms can be found in [data/HAverage/](data/HAverage/) and [data/KPrototypes/](data/KPrototypes/) respectively. The results contain the predictions of the meta-learners on each original dataset when it was used as a test dataset during the LOO precedure. So, the results allow to evaluate the generalization performances of the meta-learners on the original datasets.
+The performances showed in the paper are based on these results. By the way you can reproduce all the graphics pesented in the paper using the notebook [paper.ipynb](paper.ipynb).
 
 Finally we made the meta-learners available in [this folder](../models/), but before making them available, they have been re-trained on the entire datasets (see [train_and_save.py](train_and_save.py)).
