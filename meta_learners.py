@@ -1,7 +1,8 @@
 import sklearn.linear_model as linear
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.tree import DecisionTreeRegressor
-from sklearn import ensemble
+from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVC
 from sklearn.base import clone, BaseEstimator
 import numpy as np
 from joblib import delayed, Parallel
@@ -17,24 +18,27 @@ from torch.optim import Adam
 from tqdm import tqdm
 from pytorchltr.loss import PairwiseLogisticLoss as ltrloss
 from dtree import RankingTree
+from scipy.stats import wasserstein_distance
 
 def ndcg(y_true, y_pred, p=None):
     res = []
     sorted_ind_true = np.argsort(-y_true, axis=1)
     sorted_ind_pred = np.argsort(-y_pred, axis=1)
     for i, y in enumerate(y_true):
-        if p is None:
-            p = sum(y > 0)
-        idcg = np.sum((y[sorted_ind_true[i][:p]])/np.log2(np.arange(2, p+2)))
+        new_p = sum(y > 0)
+        if p is not None:
+            new_p = min(p, new_p)
+        idcg = np.sum((y[sorted_ind_true[i][:new_p]])/np.log2(np.arange(2, new_p+2)))
         ind = [k for k in sorted_ind_pred[i] if y[k] > 0]
-        dcg = np.sum((y[ind[:p]])/np.log2(np.arange(2, p+2)))
+        dcg = np.sum(y[ind[:new_p]]/np.log2(np.arange(2, new_p+2)))
         res.append(dcg/idcg)
     return np.array(res)
 
 def mse(y_true, y_pred):
     return np.mean((y_true[y_true>0]-y_pred[y_true>0])**2)
 
-scorer = make_scorer(lambda yt, yp: np.mean(ndcg(yt, yp, p=5)))
+# scorer = make_scorer(lambda yt, yp: np.mean(ndcg(yt, yp, p=5)))
+scorer = make_scorer(lambda yt, yp: np.mean(yt[np.arange(yt.shape[0]), np.argmax(yp, axis=1)]))
 # scorer = make_scorer(mse, greater_is_better=False)
 
 class LRRanker(linear.ElasticNet):
@@ -50,6 +54,7 @@ class LRRanker(linear.ElasticNet):
             scoring=scorer,
             cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits),
             verbose=verbose,
+            error_score='raise',
             n_jobs=n_jobs
         ).fit(X, Y, groups=groups)
         return gridcv.best_estimator_
@@ -60,14 +65,15 @@ class KNNRanker(KNeighborsRegressor):
 
     def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
         parameters = {
-            'n_neighbors': [v for v in [1, 3, 5, 8, 12, 18, 25] if v <= X.shape[0]/2],
-            'metric': ["euclidean", "manhattan", "cosine"],
+            'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
+            'metric': ["euclidean", "manhattan", "cosine", wasserstein_distance],
             'weights': ["uniform", "distance"]
         }
         gridcv = GridSearchCV(self, parameters,
             scoring=scorer,
             cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits),
             verbose=verbose,
+            error_score='raise',
             n_jobs=n_jobs
         ).fit(X, Y, groups=groups)
         return gridcv.best_estimator_
@@ -78,7 +84,7 @@ class DTreeRanker(DecisionTreeRegressor):
 
     def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
         parameters = {
-            'min_samples_leaf': [v for v in [1, 3, 5, 8, 15, 30] if v <= X.shape[0]/2],
+            'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10],
             'max_features': [None, "sqrt", "log2"]
         }
@@ -86,6 +92,27 @@ class DTreeRanker(DecisionTreeRegressor):
             scoring=scorer,
             cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits),
             verbose=verbose,
+            error_score='raise',
+            n_jobs=n_jobs
+        ).fit(X, Y, groups=groups)
+        return gridcv.best_estimator_
+
+class RFRanker(RandomForestRegressor):
+    def __init__(self, n_estimators=100, min_samples_leaf=1, max_depth=None, max_features=None, **params) -> None:
+        super().__init__(n_estimators=n_estimators, min_samples_leaf=min_samples_leaf, max_depth=max_depth, max_features=max_features, **params)
+
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
+        parameters = {
+            'n_estimators': [50, 100, 200],
+            'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
+            'max_depth': [None],
+            'max_features': [None, "sqrt"]
+        }
+        gridcv = GridSearchCV(self, parameters,
+            scoring=scorer,
+            cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits),
+            verbose=verbose,
+            error_score='raise',
             n_jobs=n_jobs
         ).fit(X, Y, groups=groups)
         return gridcv.best_estimator_
@@ -136,7 +163,7 @@ class MDTree(BaseEstimator, MultipleRegressors):
 
     def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
         parameters = {
-            'min_samples_leaf': [v for v in [1, 3, 5, 8, 15, 30] if v <= X.shape[0]/2],
+            'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10],
             'max_features': [None, "sqrt", "log2"]
         }
@@ -144,6 +171,7 @@ class MDTree(BaseEstimator, MultipleRegressors):
             scoring=scorer,
             cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits),
             verbose=verbose,
+            error_score='raise',
             n_jobs=n_jobs
         ).fit(X, Y, groups=groups)
         return gridcv.best_estimator_
@@ -165,7 +193,7 @@ class MKNN(BaseEstimator, MultipleRegressors):
 
     def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
         parameters = {
-            'n_neighbors': [v for v in [1, 3, 5, 8, 12, 18, 25] if v <= X.shape[0]/2],
+            'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'metric': ["euclidean", "manhattan", "cosine"],
             'weights': ["uniform", "distance"]
         }
@@ -173,6 +201,7 @@ class MKNN(BaseEstimator, MultipleRegressors):
             scoring=scorer,
             cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits),
             verbose=verbose,
+            error_score='raise',
             n_jobs=n_jobs
         ).fit(X, Y, groups=groups)
         return gridcv.best_estimator_
@@ -205,28 +234,7 @@ class PairwiseRanker(ABC):
             except:
                 model = None
             return model
-        # self.all_models = Parallel(n_jobs=-1, verbose=verbose)(delayed(fit_)(k) for k in range(n_pairs))
         self.all_models = [fit_(k) for k in (range(n_pairs) if verbose==0 else tqdm(range(n_pairs)))]
-        
-        # def fit_(list_k):
-        #     list_models = []
-        #     for k in list_k:
-        #         y = pairwiseY[:, k][self.list_samples[k]]
-        #         model = clone(base_model)
-        #         try:
-        #             model = model.fit(X[self.list_samples[k]], y)
-        #         except:
-        #             model = None
-        #         list_models.append(model)
-        #     return list_models
-        # self.all_models = []
-        # n_models = 200
-        # list_ret = Parallel(n_jobs=-1, verbose=verbose)(
-        #     delayed(fit_)(range(k*n_models, min(n_pairs, (k+1)*n_models))) 
-        #     for k in range(n_pairs//n_models+1)
-        # )
-        # for list_models in list_ret:
-        #     self.all_models += list_models
         
         return self
     
@@ -246,13 +254,31 @@ class PairwiseRanker(ABC):
         pass
 
 class PairwiseLRRanker(BaseEstimator, PairwiseRanker):
-    def __init__(self, **params) -> None:
+    def __init__(self, alpha=1, l1_ratio=0.5, **params) -> None:
+        self.alpha = alpha
+        self.l1_ratio = l1_ratio
         self.other_params = params
 
     def create_model(self):
-        return linear.LinearRegression(
+        return linear.ElasticNet(
+            alpha=self.alpha,
+            l1_ratio=self.l1_ratio,
             **self.other_params
         )
+
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=-1):
+        parameters = {
+            'alpha': [0.1, 0.5, 1, 2, 5, 10],
+            'l1_ratio': np.linspace(0.1, 1, 6),
+        }
+        gridcv = GridSearchCV(self, parameters,
+            scoring=scorer,
+            cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits),
+            verbose=verbose,
+            error_score='raise',
+            n_jobs=n_jobs
+        ).fit(X, Y, groups=groups)
+        return gridcv.best_estimator_
 
 class PairwiseKNNRanker(BaseEstimator, PairwiseRanker):
     def __init__(self, n_neighbors=8, metric="euclidean", weights="uniform", **params) -> None:
@@ -269,43 +295,9 @@ class PairwiseKNNRanker(BaseEstimator, PairwiseRanker):
             **self.other_params
         )
 
-    # def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=1):
-    #     parameters = {
-    #         'n_neighbors': [1, 3, 5, 8, 12, 18, 25],
-    #         'metric': ["euclidean", "manhattan", "cosine"],
-    #         'weights': ["uniform", "distance"]
-    #     }
-    #     best_score = -1
-    #     best_n_neighbors = None
-    #     best_metric = None
-    #     best_weights = None
-    #     cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits)
-    #     n_param_sets = len(parameters["n_neighbors"])*len(parameters["metric"])*len(parameters["weights"])
-    #     for n_neighbors in parameters["n_neighbors"]:
-    #         for metric in parameters["metric"]:
-    #             for weights in parameters["weights"]:
-    #                 if n_param_sets%10==0: print(f"{n_param_sets} remaining...")
-    #                 score = 0
-    #                 for train_index, test_index in cv.split(X, Y, groups=groups):
-    #                     model = clone(self)
-    #                     model.set_params(n_neighbors=n_neighbors, metric=metric, weights=weights)
-    #                     model = model.fit(X[train_index], Y[train_index])
-    #                     score += np.mean(ndcg(Y[test_index], model.predict(X[test_index])))
-    #                 score /= n_splits
-    #                 if score > best_score:
-    #                     best_score = score
-    #                     best_n_neighbors = n_neighbors
-    #                     best_metric = metric
-    #                     best_weights = weights
-    #                 n_param_sets -= 1
-    #     model = clone(self)
-    #     model.set_params(n_neighbors=best_n_neighbors, metric=best_metric, weights=best_weights)
-    #     model = model.fit(X[train_index], Y[train_index])
-    #     return model
-
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=5):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=8):
         parameters = {
-            'n_neighbors': [v for v in [1, 3, 5, 8, 12, 18, 25] if v <= X.shape[0]/2],
+            'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'metric': ["euclidean", "manhattan", "cosine"],
             'weights': ["uniform", "distance"]
         }
@@ -313,6 +305,7 @@ class PairwiseKNNRanker(BaseEstimator, PairwiseRanker):
             scoring=scorer,
             cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits),
             verbose=verbose,
+            error_score='raise',
             n_jobs=n_jobs
         ).fit(X, Y, groups=groups)
         return gridcv.best_estimator_
@@ -332,22 +325,23 @@ class PairwiseDTreeRanker(BaseEstimator, PairwiseRanker):
             **self.other_params
         )
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=5):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, verbose=0, n_jobs=15):
         parameters = {
-            'min_samples_leaf': [v for v in [1, 3, 5, 8, 15, 30] if v <= X.shape[0]/2],
+            'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10],
-            'max_features': [None, "sqrt", "log2"]
+            'max_features': [None, "sqrt"]
         }
         gridcv = GridSearchCV(self, parameters,
             scoring=scorer,
             cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(n_splits=n_splits),
             verbose=verbose,
+            error_score='raise',
             n_jobs=n_jobs
         ).fit(X, Y, groups=groups)
         return gridcv.best_estimator_
 
 class RankNet(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_layers=(100,), multiple=False, gamma=0, loss="mse", optimizer='adam', learnin_rate=1e-3, device='cpu') -> None:
+    def __init__(self, input_dim, output_dim, hidden_layers=(100,), multiple=False, gamma=0, loss="mse", optimizer='adam', learning_rate=1e-3, wd=0, device='cpu') -> None:
         super().__init__()
         self.hidden_layers = hidden_layers
         self.gamma = gamma
@@ -376,7 +370,7 @@ class RankNet(nn.Module):
             self.network.append(nn.Sigmoid())
 
         if optimizer == 'adam':
-            self.optimizer = torch.optim.Adam(self.parameters(), lr = learnin_rate)
+            self.optimizer = torch.optim.Adam(self.parameters(), lr = learning_rate, weight_decay=wd)
         self.device = device
         self.to(device)
 
@@ -458,14 +452,15 @@ class RankNet(nn.Module):
 
 ALL_MODELS = {
     "LR": linear.LinearRegression,
+    "ElasticNet": LRRanker,
     "KNN": KNNRanker,
     "DTree": DTreeRanker,
     "MDTree": MDTree,
     "MKNN": MKNN,
+    "RF": RFRanker,
     "PR-LR": PairwiseLRRanker,
     "PR-KNN": PairwiseKNNRanker,
     "PR-DTree": PairwiseDTreeRanker,
-    # "RForest": ensemble.RandomForestRegressor,
     "RT": RankingTree,
     "RankNet": RankNet,
 }
@@ -475,13 +470,10 @@ NN_MODELS = {
 }
 
 if __name__ == "__main__":
-    X = np.random.uniform(size=(900, 61))
-    Y = np.random.uniform(size=(900, 120))
-    ranker = PairwiseKNNRanker()
+    X = np.random.uniform(size=(500, 61))
+    Y = np.random.uniform(size=(500, 120))
+    ranker = DTreeRanker()
     ranker = ranker.cross_val_fit(X, Y, verbose=10)
-
-    # ranker = SVMLR2()
-    # ranker = ranker.fit(X, Y)
 
     # ranker = ResNet(X.shape[1], Y.shape[1], device="cuda:0", multiple=False)
     # ranker = ranker.fit(X, Y)

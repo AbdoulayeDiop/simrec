@@ -48,6 +48,11 @@ if __name__=="__main__":
     df = df[df.NumberOfClasses > 0]
     df = df[df.NumberOfClasses < 100]
     df = df[df.version == 1]
+
+    tasks = openml.tasks.list_tasks(task_type=openml.tasks.TaskType.CLUSTERING)
+    datasets_used_for_clustering = np.unique([v["did"] for v in tasks.values()])
+    df = df[df.index.isin(datasets_used_for_clustering)]
+
     n_matching_datasets = len(df)
     print(f"{n_matching_datasets} matching data sets found!")
     print(df.describe())
