@@ -1,5 +1,3 @@
-"Module that implement similarity measures"
-
 import numpy.typing as npt
 import abc
 import numpy as np
@@ -10,11 +8,11 @@ from sklearn.metrics import pairwise_distances
 
 class Metric():
     @abc.abstractmethod
-    def dist(self, x: npt.ArrayLike, y: npt.ArrayLike) -> float:
+    def dist(self, x: npt.ArrayLike, y: npt.ArrayLike, **metric_params) -> float:
         pass
 
     @abc.abstractmethod
-    def pairwise(self, X: npt.NDArray, Y: npt.NDArray = None, n_jobs=None) -> npt.NDArray:
+    def pairwise(self, X: npt.NDArray, Y: npt.NDArray = None, n_jobs=None, **metric_params) -> npt.NDArray:
         pass
 
     def fit(self, X):
