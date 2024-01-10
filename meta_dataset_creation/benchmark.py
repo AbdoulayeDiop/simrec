@@ -17,10 +17,10 @@ import numpy as np
 from filelock import FileLock
 from joblib import Parallel, delayed
 from sklearn.preprocessing import OneHotEncoder, minmax_scale
-from utils import (EXTERNAL_EVAL_METRICS, INTERNAL_EVAL_METRICS, get_score,
-                   get_unsupervised_score)
 
 sys.path.append("..")
+from meta_dataset_creation.utils import (EXTERNAL_EVAL_METRICS, INTERNAL_EVAL_METRICS, get_score,
+                   get_unsupervised_score)
 from metrics import base_metrics
 from clustering_algorithms import haverage, kmedoids, kprototypes
 
@@ -35,60 +35,16 @@ np.random.seed(0)
 
 
 def eval_haverage(Dnum, Dcat, y, n_clusters):
-    # clusters = [haverage(Dnum, Dcat, w, n_clusters) for w in w_values]
-    # result = {}
-    # for eval_metric in EXTERNAL_EVAL_METRICS:
-    #     result[eval_metric] = []
-    #     for w, yp in zip(w_values, clusters):
-    #         score = - \
-    #             1 if yp is None else get_score(y, yp, eval_metric=eval_metric)
-    #         result[eval_metric].append({
-    #             "params": {
-    #                 "alpha": w,
-    #                 "n_clusters": n_clusters
-    #             },
-    #             "score": score
-    #         })
-
-    # for eval_metric in INTERNAL_EVAL_METRICS:
-    #     result[eval_metric] = []
-    #     for w, yp in zip(w_values, clusters):
-    #         score = -1 if yp is None else \
-    #             get_unsupervised_score((1-w)*Dnum + w*Dcat, yp,
-    #                                    eval_metric=eval_metric, metric="precomputed")
-    #         result[eval_metric].append({
-    #             "params": {
-    #                 "alpha": w,
-    #                 "n_clusters": n_clusters
-    #             },
-    #             "score": score
-    #         })
-    # return result
-    mem = (Dnum.itemsize*Dnum.size + Dcat.itemsize*Dcat.size)*2
-    n_jobs = min(64, int(30e9/mem))
-    clusters = Parallel(n_jobs=n_jobs)(
-        delayed(haverage)(
-            Dnum, Dcat, w, n_clusters
-        ) for w in w_values
-    )
-
+    clusters = [haverage(Dnum, Dcat, w, n_clusters) for w in w_values]
     result = {}
     for eval_metric in EXTERNAL_EVAL_METRICS:
         result[eval_metric] = []
-        scores = Parallel(n_jobs=51)(
-            delayed(get_score)(y, yp, eval_metric=eval_metric)
-            for yp in clusters if yp is not None
-        )
-        i = 0
         for w, yp in zip(w_values, clusters):
-            if yp is None:
-                score = -1
-            else:
-                score = scores[i]
-                i += 1
+            score = - \
+                1 if yp is None else get_score(y, yp, eval_metric=eval_metric)
             result[eval_metric].append({
                 "params": {
-                    "w": w,
+                    "alpha": w,
                     "n_clusters": n_clusters
                 },
                 "score": score
@@ -96,27 +52,71 @@ def eval_haverage(Dnum, Dcat, y, n_clusters):
 
     for eval_metric in INTERNAL_EVAL_METRICS:
         result[eval_metric] = []
-        scores = Parallel(n_jobs=51)(
-            delayed(get_unsupervised_score)(
-                (1-w)*Dnum + w*Dcat, yp,
-                eval_metric=eval_metric, metric="precomputed"
-            ) for w, yp in zip(w_values, clusters) if yp is not None
-        )
-        i = 0
         for w, yp in zip(w_values, clusters):
-            if yp is None:
-                score = -1
-            else:
-                score = scores[i]
-                i += 1
+            score = -1 if yp is None else \
+                get_unsupervised_score((1-w)*Dnum + w*Dcat, yp,
+                                       eval_metric=eval_metric, metric="precomputed")
             result[eval_metric].append({
                 "params": {
-                    "w": w,
+                    "alpha": w,
                     "n_clusters": n_clusters
                 },
                 "score": score
             })
     return result
+    # mem = (Dnum.itemsize*Dnum.size + Dcat.itemsize*Dcat.size)*2
+    # n_jobs = min(64, int(40e9/mem))
+    # clusters = Parallel(n_jobs=n_jobs)(
+    #     delayed(haverage)(
+    #         Dnum, Dcat, w, n_clusters
+    #     ) for w in w_values
+    # )
+
+    # result = {}
+    # for eval_metric in EXTERNAL_EVAL_METRICS:
+    #     result[eval_metric] = []
+    #     scores = Parallel(n_jobs=51)(
+    #         delayed(get_score)(y, yp, eval_metric=eval_metric)
+    #         for yp in clusters if yp is not None
+    #     )
+    #     i = 0
+    #     for w, yp in zip(w_values, clusters):
+    #         if yp is None:
+    #             score = -1
+    #         else:
+    #             score = scores[i]
+    #             i += 1
+    #         result[eval_metric].append({
+    #             "params": {
+    #                 "w": w,
+    #                 "n_clusters": n_clusters
+    #             },
+    #             "score": score
+    #         })
+
+    # for eval_metric in INTERNAL_EVAL_METRICS:
+    #     result[eval_metric] = []
+    #     scores = Parallel(n_jobs=51)(
+    #         delayed(get_unsupervised_score)(
+    #             (1-w)*Dnum + w*Dcat, yp,
+    #             eval_metric=eval_metric, metric="precomputed"
+    #         ) for w, yp in zip(w_values, clusters) if yp is not None
+    #     )
+    #     i = 0
+    #     for w, yp in zip(w_values, clusters):
+    #         if yp is None:
+    #             score = -1
+    #         else:
+    #             score = scores[i]
+    #             i += 1
+    #         result[eval_metric].append({
+    #             "params": {
+    #                 "w": w,
+    #                 "n_clusters": n_clusters
+    #             },
+    #             "score": score
+    #         })
+    # return result
 
 
 def eval_kmedoids(Dnum, Dcat, y, n_clusters, method):
@@ -405,7 +405,6 @@ def benchmark(data, outputdir, algorithm="haverage"):
                         Dcat = compute_dissim(Xdummy, bin_metric)
                         with open(filename, "wb") as f:
                             pickle.dump(Dcat, f)
-                            f.flush()
                     if Dcat is not None:
                         # print(num_metric, bin_metric, end=", ")
                         result[f"{num_metric}_{bin_metric}"] = eval_with_pairwise_dist(
@@ -471,20 +470,20 @@ datasets to benchmark, {len(already_handled_datasets)} already handled")
     print()
     print("BENCHMARKING...")
     start = time.time()
-    # list_ret = Parallel(n_jobs=int(args.jobs), verbose=60)(
-    #     delayed(benchmark)(
-    #         data, args.outputdir,
-    #         algorithm=args.algorithm
-    #     ) for data in datasets
-    # )
-    for i, data in enumerate(sorted(datasets, key=lambda d: len(d["samples"]))):
-        print()
-        print()
-        print("On dataset",
-              data["id"], f"({i+1}/{len(datasets)}) ------------------------------------")
-        benchmark(
+    list_ret = Parallel(n_jobs=int(args.jobs), verbose=60)(
+        delayed(benchmark)(
             data, args.outputdir,
             algorithm=args.algorithm
-        )
+        ) for data in datasets
+    )
+    # for i, data in enumerate(sorted(datasets, key=lambda d: len(d["samples"]))):
+    #     print()
+    #     print()
+    #     print("On dataset",
+    #           data["id"], f"({i+1}/{len(datasets)}) ------------------------------------")
+    #     benchmark(
+    #         data, args.outputdir,
+    #         algorithm=args.algorithm
+    #     )
     end = time.time()
     print(f"END. total time = {end - start}")
