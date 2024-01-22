@@ -29,6 +29,7 @@ def mse(y_true, y_pred):
 
 # scorer = make_scorer(lambda yt, yp: np.mean(ndcg(yt, yp, p=5)))
 scorer = make_scorer(lambda yt, yp: np.mean([y[y>0][np.argmax(yp[i][y>0])]/max(y) for i, y in enumerate(yt)]))
+scorer = make_scorer(lambda yt, yp: np.mean([y[y>0][np.argmax(yp[i][y>0])]/max(y) for i, y in enumerate(yt)]))
 # scorer = make_scorer(mse, greater_is_better=False)
 
 
@@ -36,7 +37,7 @@ class LRRanker(linear.ElasticNet):
     def __init__(self, alpha=1, l1_ratio=0.5, **params) -> None:
         super().__init__(alpha=alpha, l1_ratio=l1_ratio, **params)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'alpha': [0.1, 0.2, 0.4, 0.6, 0.8, 1, 1.5, 2, 5, 10],
             'l1_ratio': np.linspace(0.1, 1, 10),
@@ -58,7 +59,7 @@ class KNNRanker(KNeighborsRegressor):
     def __init__(self, n_neighbors=5, metric="euclidean", weights="uniform", **params) -> None:
         super().__init__(n_neighbors=n_neighbors, metric=metric, weights=weights, **params)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'n_neighbors': [v for v in range(1, 26) if v <= X.shape[0]/2],
             'metric': ["euclidean", "manhattan", "cosine"],
@@ -82,7 +83,7 @@ class DTreeRanker(DecisionTreeRegressor):
         super().__init__(min_samples_leaf=min_samples_leaf,
                          max_depth=max_depth, max_features=max_features, **params)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10],
@@ -115,7 +116,7 @@ class NDCGDTreeRanker(BaseEstimator):
     def predict(self, X):
         return self.model.predict(X)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'min_samples_split': [v for v in [2, 5, 10, 20] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10]
@@ -138,7 +139,7 @@ class RFRanker(RandomForestRegressor):
         super().__init__(n_estimators=n_estimators, min_samples_leaf=min_samples_leaf,
                          max_depth=max_depth, max_features=max_features, **params)
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'n_estimators': [50, 100, 200],
             'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
@@ -206,7 +207,7 @@ class MDTree(BaseEstimator, MultipleRegressors):
             **self.other_params
         )
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10],
@@ -240,7 +241,7 @@ class MKNN(BaseEstimator, MultipleRegressors):
             **self.other_params
         )
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
             'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'metric': ["euclidean", "manhattan", "cosine"],
@@ -337,7 +338,7 @@ class PairwiseKNNRanker(BaseEstimator, PairwiseRanker):
             **self.other_params
         )
 
-    # def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=1):
+    # def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=1):
     #     parameters = {
     #         'n_neighbors': [1, 3, 5, 8, 12, 18, 25],
     #         'metric': ["euclidean", "manhattan", "cosine"],
@@ -371,7 +372,7 @@ class PairwiseKNNRanker(BaseEstimator, PairwiseRanker):
     #     model = model.fit(X[train_index], Y[train_index])
     #     return model
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=8):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=8):
         parameters = {
             'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'metric': ["euclidean", "manhattan", "cosine"],
@@ -405,7 +406,7 @@ class PairwiseDTreeRanker(BaseEstimator, PairwiseRanker):
             **self.other_params
         )
 
-    def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=15):
+    def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=15):
         parameters = {
             'min_samples_leaf': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'max_depth': [None, 5, 10],

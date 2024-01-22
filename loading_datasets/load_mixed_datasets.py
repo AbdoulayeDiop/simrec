@@ -59,8 +59,8 @@ print(f"{n_matching_datasets} matching data sets found!")
 for d in dataset_list:
     print(d)
 
-already_loaded_datasets = [int(filename.split('.')[0])
-                           for filename in os.listdir(args.outputdir)]
+# already_loaded_datasets = [int(filename.split('.')[0])
+#                            for filename in os.listdir(args.outputdir)]
 
 for d in dataset_list:
     did = d["did"]
