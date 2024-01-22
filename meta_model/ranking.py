@@ -28,8 +28,7 @@ def mse(y_true, y_pred):
 
 
 # scorer = make_scorer(lambda yt, yp: np.mean(ndcg(yt, yp, p=5)))
-scorer = make_scorer(lambda yt, yp: np.mean(
-    yt[np.arange(yt.shape[0]), np.argmax(yp, axis=1)]))
+scorer = make_scorer(lambda yt, yp: np.mean([y[y>0][np.argmax(yp[i][y>0])]/max(y) for i, y in enumerate(yt)]))
 # scorer = make_scorer(mse, greater_is_better=False)
 
 
@@ -61,8 +60,8 @@ class KNNRanker(KNeighborsRegressor):
 
     def cross_val_fit(self, X, Y, groups=None, n_splits=5, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
-            'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
-            'metric': ["euclidean", "manhattan", "cosine", wasserstein_distance],
+            'n_neighbors': [v for v in range(1, 26) if v <= X.shape[0]/2],
+            'metric': ["euclidean", "manhattan", "cosine"],
             'weights': ["uniform", "distance"]
         }
         gridcv = GridSearchCV(self, parameters,
