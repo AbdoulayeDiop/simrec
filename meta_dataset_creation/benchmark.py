@@ -153,78 +153,14 @@ def eval_kmedoids(Dnum, Dcat, y, n_clusters, method):
 
 
 def eval_kprototypes(Xnum, Xcat, y, n_clusters, num_metric, cat_metric):
-    # clusters = [kprototypes(Xnum, Xcat, n_clusters, num_metric,
-    #                         cat_metric, gamma) for gamma in gamma_values]
-    # result = {}
-    # for eval_metric in EXTERNAL_EVAL_METRICS:
-    #     result[eval_metric] = []
-    #     for gamma, yp in zip(gamma_values, clusters):
-    #         score = -1 if yp is None else \
-    #             get_score(y, yp, eval_metric=eval_metric)
-    #         result[eval_metric].append({
-    #             "params": {
-    #                 "gamma": gamma,
-    #                 "n_clusters": n_clusters
-    #             },
-    #             "score": score
-    #         })
-
-    # Dnum = num_metric.pairwise(Xnum)
-    # Dcat = None
-    # if np.isnan(Dnum).any():
-    #     print("Warning: Distance matrix contain Nan values for metric:", num_metric)
-    #     Dnum = None
-    # elif np.isinf(Dnum).any():
-    #     print("Warning: Distance matrix contain infinite values for metric:", num_metric)
-    #     Dnum = None
-    # if Dnum is not None:
-    #     Dcat = cat_metric.pairwise(Xcat)
-    #     if np.isnan(Dcat).any():
-    #         print("Warning: Distance matrix contain Nan values for metric:", cat_metric)
-    #         Dcat = None
-    #     elif np.isinf(Dcat).any():
-    #         print("Warning: Distance matrix contain infinite values for metric:", cat_metric)
-    #         Dcat = None
-
-    # if Dcat is not None:
-    #     for eval_metric in INTERNAL_EVAL_METRICS:
-    #         result[eval_metric] = []
-    #         for gamma, yp in zip(gamma_values, clusters):
-    #             D = Dnum + gamma*Dcat
-    #             np.fill_diagonal(D, 0)
-    #             score = -1 if yp is None else \
-    #                 get_unsupervised_score(D, yp, eval_metric=eval_metric, metric="precomputed")
-    #             result[eval_metric].append({
-    #                 "params": {
-    #                     "gamma": gamma,
-    #                     "n_clusters": n_clusters
-    #                 },
-    #                 "score": score
-    #             })
-    # return result
-    mem = (Xnum.itemsize*Xnum.size + Xcat.itemsize*Xcat.size)*2
-    n_jobs = min(128, int(16e9/mem))
-    clusters = Parallel(n_jobs=n_jobs)(
-        delayed(kprototypes)(
-            Xnum, Xcat, n_clusters,
-            num_metric, cat_metric, gamma
-        ) for gamma in gamma_values
-    )
-
+    clusters = [kprototypes(Xnum, Xcat, n_clusters, num_metric,
+                            cat_metric, gamma) for gamma in gamma_values]
     result = {}
     for eval_metric in EXTERNAL_EVAL_METRICS:
         result[eval_metric] = []
-        scores = Parallel(n_jobs=-1)(
-            delayed(get_score)(y, yp, eval_metric=eval_metric)
-            for yp in clusters if yp is not None
-        )
-        i = 0
         for gamma, yp in zip(gamma_values, clusters):
-            if yp is None:
-                score = -1
-            else:
-                score = scores[i]
-                i += 1
+            score = -1 if yp is None else \
+                get_score(y, yp, eval_metric=eval_metric)
             result[eval_metric].append({
                 "params": {
                     "gamma": gamma,
@@ -247,26 +183,17 @@ def eval_kprototypes(Xnum, Xcat, y, n_clusters, num_metric, cat_metric):
             print("Warning: Distance matrix contain Nan values for metric:", cat_metric)
             Dcat = None
         elif np.isinf(Dcat).any():
-            print(
-                "Warning: Distance matrix contain infinite values for metric:", cat_metric)
+            print("Warning: Distance matrix contain infinite values for metric:", cat_metric)
             Dcat = None
 
     if Dcat is not None:
         for eval_metric in INTERNAL_EVAL_METRICS:
             result[eval_metric] = []
-            scores = Parallel(n_jobs=-1)(
-                delayed(get_unsupervised_score)(
-                    Dnum + gamma*Dcat, yp,
-                    eval_metric=eval_metric, metric="precomputed"
-                ) for gamma, yp in zip(gamma_values, clusters) if yp is not None
-            )
-            i = 0
             for gamma, yp in zip(gamma_values, clusters):
-                if yp is None:
-                    score = -1
-                else:
-                    score = scores[i]
-                    i += 1
+                D = Dnum + gamma*Dcat
+                np.fill_diagonal(D, 0)
+                score = -1 if yp is None else \
+                    get_unsupervised_score(D, yp, eval_metric=eval_metric, metric="precomputed")
                 result[eval_metric].append({
                     "params": {
                         "gamma": gamma,
@@ -275,6 +202,80 @@ def eval_kprototypes(Xnum, Xcat, y, n_clusters, num_metric, cat_metric):
                     "score": score
                 })
     return result
+
+    # mem = (Xnum.itemsize*Xnum.size + Xcat.itemsize*Xcat.size)*2
+    # n_jobs = min(128, int(16e9/mem))
+    # clusters = Parallel(n_jobs=n_jobs)(
+    #     delayed(kprototypes)(
+    #         Xnum, Xcat, n_clusters,
+    #         num_metric, cat_metric, gamma
+    #     ) for gamma in gamma_values
+    # )
+
+    # result = {}
+    # for eval_metric in EXTERNAL_EVAL_METRICS:
+    #     result[eval_metric] = []
+    #     scores = Parallel(n_jobs=-1)(
+    #         delayed(get_score)(y, yp, eval_metric=eval_metric)
+    #         for yp in clusters if yp is not None
+    #     )
+    #     i = 0
+    #     for gamma, yp in zip(gamma_values, clusters):
+    #         if yp is None:
+    #             score = -1
+    #         else:
+    #             score = scores[i]
+    #             i += 1
+    #         result[eval_metric].append({
+    #             "params": {
+    #                 "gamma": gamma,
+    #                 "n_clusters": n_clusters
+    #             },
+    #             "score": score
+    #         })
+
+    # Dnum = num_metric.pairwise(Xnum)
+    # Dcat = None
+    # if np.isnan(Dnum).any():
+    #     print("Warning: Distance matrix contain Nan values for metric:", num_metric)
+    #     Dnum = None
+    # elif np.isinf(Dnum).any():
+    #     print("Warning: Distance matrix contain infinite values for metric:", num_metric)
+    #     Dnum = None
+    # if Dnum is not None:
+    #     Dcat = cat_metric.pairwise(Xcat)
+    #     if np.isnan(Dcat).any():
+    #         print("Warning: Distance matrix contain Nan values for metric:", cat_metric)
+    #         Dcat = None
+    #     elif np.isinf(Dcat).any():
+    #         print(
+    #             "Warning: Distance matrix contain infinite values for metric:", cat_metric)
+    #         Dcat = None
+
+    # if Dcat is not None:
+    #     for eval_metric in INTERNAL_EVAL_METRICS:
+    #         result[eval_metric] = []
+    #         scores = Parallel(n_jobs=-1)(
+    #             delayed(get_unsupervised_score)(
+    #                 Dnum + gamma*Dcat, yp,
+    #                 eval_metric=eval_metric, metric="precomputed"
+    #             ) for gamma, yp in zip(gamma_values, clusters) if yp is not None
+    #         )
+    #         i = 0
+    #         for gamma, yp in zip(gamma_values, clusters):
+    #             if yp is None:
+    #                 score = -1
+    #             else:
+    #                 score = scores[i]
+    #                 i += 1
+    #             result[eval_metric].append({
+    #                 "params": {
+    #                     "gamma": gamma,
+    #                     "n_clusters": n_clusters
+    #                 },
+    #                 "score": score
+    #             })
+    # return result
 
 
 def eval_with_pairwise_dist(algorithm, Dnum, Dcat, y, n_clusters):
@@ -368,12 +369,12 @@ def benchmark(data, outputdir, algorithm="haverage"):
             if fitted_num_metric is not None:
                 for cat_metric, fitted_cat_metric in all_fitted_cat_metric.items():
                     if fitted_cat_metric is not None and f"{num_metric}_{cat_metric}" not in result:
-                        print(num_metric, cat_metric, end=", ")
+                        # print(num_metric, cat_metric, end=", ")
                         result[f"{num_metric}_{cat_metric}"] = eval_with_data(
                             algorithm, Xnum, Xcat, y, n_clusters, fitted_num_metric, fitted_cat_metric)
                 for bin_metric, fitted_bin_metric in all_fitted_bin_metric.items():
                     if fitted_bin_metric is not None and f"{num_metric}_{bin_metric}" not in result:
-                        print(num_metric, bin_metric, end=", ")
+                        # print(num_metric, bin_metric, end=", ")
                         result[f"{num_metric}_{bin_metric}"] = eval_with_data(
                             algorithm, Xnum, Xdummy, y, n_clusters, fitted_num_metric, fitted_bin_metric)
     else:
@@ -465,6 +466,7 @@ datasets to benchmark, {len(already_handled_datasets)} already handled")
         with open(filename, "rb") as f:
             data = pickle.load(f)
         data['id'] = filename.split('/')[-1].split(".")[0]
+        _, data['y'] = np.unique(data['y'], return_inverse=True)
         datasets.append(data)
 
     print()

@@ -37,7 +37,9 @@ filenames = []
 if args.datasetsdir is not None:
     filenames += [os.path.join(args.datasetsdir, filename)
                     for filename in os.listdir(args.datasetsdir)
-                    if filename.split('.')[0] not in meta_df.index]
+                    if filename.split('.')[0] not in meta_df.index.astype(str)]
+
+print(f"{len(filenames)}/{len(os.listdir(args.datasetsdir))} datasets to benchmark")
 
 datasets = []
 for filename in filenames:
