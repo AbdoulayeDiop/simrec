@@ -274,7 +274,7 @@ class AE(nn.Module):
         return self.encoder(X)
     
     def fit(self, train_loader, optimizer, epochs=20, \
-            val_loader=None, shuffle=True):
+            val_loader=None, shuffle=True, verbose=0):
 
         history = {
             "train": {
@@ -286,7 +286,8 @@ class AE(nn.Module):
         }
         loss_function = nn.MSELoss()
         for epoch in range(epochs):
-            print(f"Epoch {epoch+1}/{epochs}:", end=" ")
+            if verbose > 0:
+                print(f"Epoch {epoch+1}/{epochs}:", end=" ")
             losses = []
             for X, in train_loader:
                 mapping = self.forward(X)
@@ -298,7 +299,8 @@ class AE(nn.Module):
                 loss.backward()
                 optimizer.step()
             history["train"]["loss"].append(np.mean(losses))
-            print(f"train_loss={history['train']['loss'][-1]:.3g}", end=", " if val_loader else "\n")
+            if verbose > 0:
+                print(f"train_loss={history['train']['loss'][-1]:.3g}", end=", " if val_loader else "\n")
             if val_loader is not None:
                 with torch.no_grad():
                     losses = []
@@ -308,7 +310,8 @@ class AE(nn.Module):
                         loss = loss_function(X, Xr)
                         losses.append(loss.item())
                     history["val"]["loss"].append(np.mean(losses))
-                print(f"val_loss={history['val']['loss'][-1]:.3g}")
+                if verbose > 0:
+                    print(f"val_loss={history['val']['loss'][-1]:.3g}")
         self.history = history
         return self
     

@@ -28,8 +28,8 @@ def mse(y_true, y_pred):
 
 
 # scorer = make_scorer(lambda yt, yp: np.mean(ndcg(yt, yp, p=5)))
-scorer = make_scorer(lambda yt, yp: np.mean([y[y>0][np.argmax(yp[i][y>0])]/max(y) for i, y in enumerate(yt)]))
-scorer = make_scorer(lambda yt, yp: np.mean([y[y>0][np.argmax(yp[i][y>0])]/max(y) for i, y in enumerate(yt)]))
+scorer = make_scorer(lambda yt, yp: np.mean([y[y>-1][np.argmax(yp[i][y>-1])] for i, y in enumerate(yt)]))
+scorer_func = lambda yt, yp: np.mean([y[y>-1][np.argmax(yp[i][y>-1])] for i, y in enumerate(yt)])
 # scorer = make_scorer(mse, greater_is_better=False)
 
 
@@ -76,6 +76,23 @@ class KNNRanker(KNeighborsRegressor):
         if return_cv_scores:
             return gridcv.best_estimator_, gridcv.best_score_
         return gridcv.best_estimator_
+
+    def grid_search(self, X, Y, groups=None, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1, refit=True):
+        parameters = {
+            'n_neighbors': [v for v in range(1, 26) if v <= X.shape[0]/2],
+            'metric': ["euclidean", "manhattan", "cosine"],
+            'weights': ["uniform", "distance"]
+        }
+        gridcv = GridSearchCV(self, parameters,
+                              scoring=scorer,
+                              cv=GroupKFold(n_splits=n_splits) if groups is not None else KFold(
+                                  n_splits=n_splits),
+                              verbose=verbose,
+                              error_score='raise',
+                              refit=refit,
+                              n_jobs=n_jobs
+                              ).fit(X, Y, groups=groups)
+        return gridcv
 
 
 class DTreeRanker(DecisionTreeRegressor):
@@ -160,14 +177,14 @@ class RFRanker(RandomForestRegressor):
 
 
 class MultipleRegressors(ABC):
-    def fit(self, X, Y):
+    def fit(self, X, Y, lb=-1):
         self.n_outputs = Y.shape[1]
         base_model = self.create_regressor()
 
         def fit_(y):
             model = clone(base_model)
             try:
-                model = model.fit(X[y > 0], y[y > 0])
+                model = model.fit(X[y > lb], y[y > lb])
             except:
                 model = None
             return model
@@ -261,7 +278,7 @@ class MKNN(BaseEstimator, MultipleRegressors):
 
 
 class PairwiseRanker(ABC):
-    def _get_pairs(self, Y):
+    def _get_pairs(self, Y, lb):
         n = Y.shape[1]
         list_i = []
         list_j = []
@@ -271,12 +288,12 @@ class PairwiseRanker(ABC):
                 list_i.append(i)
                 list_j.append(j)
                 list_samples.append([ind for ind in range(
-                    Y.shape[0]) if Y[ind, i] > 0 and Y[ind, j] > 0])
+                    Y.shape[0]) if Y[ind, i] > lb and Y[ind, j] > lb])
         return list_i, list_j, list_samples
 
-    def fit(self, X, Y, verbose=0):
+    def fit(self, X, Y, lb=-1, verbose=0):
         self.n_outputs = Y.shape[1]
-        self.list_i, self.list_j, self.list_samples = self._get_pairs(Y)
+        self.list_i, self.list_j, self.list_samples = self._get_pairs(Y, lb)
         n_pairs = len(self.list_i)
         pairwiseY = Y[:, self.list_i] - Y[:, self.list_j]
         base_model = self.create_model()
