@@ -2,6 +2,7 @@ import numpy as np
 import os
 import pandas as pd
 import pickle
+import openml
 
 def _ndcg(y1, y2, p=None):
     y1 = np.array(y1)
@@ -31,9 +32,11 @@ def custom_sim(y1, y2, threshold=0.95):
     set2 = set([j for j, yj in enumerate(y2) if yj/max(y2) > threshold])
     return len(set1.intersection(set2)) / len(set1.union(set2)) #pylint: disable=arguments-out-of-order
 
-def load_meta_dataset(meta_features_file, scores_dir, eval_metric):
+def load_meta_dataset(meta_features_file, scores_dir, algorithm, eval_metric):
     np.random.seed(0)
     mixed_meta_df = pd.read_csv(meta_features_file, index_col="id").drop_duplicates()
+    openml_df = openml.datasets.list_datasets(output_format="dataframe")
+    mixed_meta_df = mixed_meta_df.loc[[ind for ind in mixed_meta_df.index if openml_df.loc[ind, "version"]==1]]
     mixed_meta_df.index = mixed_meta_df.index.astype(str)
     print("Number of meta features:", mixed_meta_df.shape[1])
     print("Number of instances:", mixed_meta_df.shape[0])

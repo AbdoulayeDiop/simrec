@@ -1,27 +1,29 @@
 import numpy as np
 import pygad
 from ranking import ALL_MODELS, scorer, scorer_func
-from sklearn.model_selection import cross_val_score, KFold
+from sklearn.model_selection import cross_val_predict, KFold
 import torch
 import torch.nn as nn
 from meta_model import AEKNN
 
+
 def mfs_plus_hpo(X, Y, n_neighbors_values=None, metrics=None, weights=None, num_generations=100,
-                 pop_size=50, parent_selection_type="sss", crossover_probability=0.8,
-                 mutation_probability=0.2, crossover_type="uniform", mutation_type="random",
+                 pop_size=8, parent_selection_type="sss", crossover_probability=0.9,
+                 mutation_probability=0.1, crossover_type="uniform", mutation_type="random",
                  n_splits=10, scorer=scorer):
     if n_neighbors_values is None:
-        n_neighbors_values = np.arange(1, 31)
+        n_neighbors_values = np.arange(1, 26)
     if metrics is None:
         metrics = ["euclidean", "manhattan", "cosine"]
     if weights is None:
         weights = ["uniform", "distance"]
 
     def on_generation(ga_instance):
-        _, fitness, _ = ga_instance.best_solution(
-            pop_fitness=ga_instance.last_generation_fitness)
-        print(
-            f"GEN: {ga_instance.generations_completed}, Best fitness: {fitness}")
+        if ga_instance.generations_completed % 10 == 0:
+            _, fitness, _ = ga_instance.best_solution(
+                pop_fitness=ga_instance.last_generation_fitness)
+            print(
+                f"GEN: {ga_instance.generations_completed}, Best fitness: {fitness}")
 
     def fitness_func(ga_instance, solution, solution_idx):
         selected_feats = np.array(solution[:X.shape[1]]) > 0
@@ -30,9 +32,10 @@ def mfs_plus_hpo(X, Y, n_neighbors_values=None, metrics=None, weights=None, num_
         w = weights[solution[X.shape[1]+2]]
         knn = ALL_MODELS["KNN"](n_neighbors=n_neighbors,
                                 metric=metric, weights=w)
-        fitness = np.mean(cross_val_score(
-            knn, X[:, selected_feats], Y, cv=n_splits, scoring=scorer, n_jobs=-1))
-        return fitness - 1e-5*sum(selected_feats)
+        Y_pred = cross_val_predict(
+            knn, X[:, selected_feats], Y, cv=10, n_jobs=-1)
+        fitness = scorer_func(Y, Y_pred)
+        return fitness - 3e-4*sum(selected_feats)
 
     fitness_function = fitness_func
     num_parents_mating = pop_size//2
@@ -86,12 +89,12 @@ def create_encoder_decoder(input_dim, n_neurons):
 
 
 def aeknn_hpo(X, Y, n_neurons, ae_fit_params, n_neighbors_values=None, metrics=None,
-               weights=None, device='cpu', num_generations=100, pop_size=50, parent_selection_type="sss",
-               crossover_probability=0.8, mutation_probability=0.2, crossover_type="uniform",
-               mutation_type="random", n_splits=10, scorer_func=scorer_func):
+              weights=None, device='cpu', num_generations=100, pop_size=8, parent_selection_type="sss",
+              crossover_probability=0.75, mutation_probability=0.25, crossover_type="uniform",
+              mutation_type="random", n_splits=10, scorer_func=scorer_func):
 
     if n_neighbors_values is None:
-        n_neighbors_values = np.arange(1, 31)
+        n_neighbors_values = np.arange(1, 26)
     if metrics is None:
         metrics = ["euclidean", "manhattan", "cosine"]
     if weights is None:
@@ -140,7 +143,7 @@ def aeknn_hpo(X, Y, n_neurons, ae_fit_params, n_neighbors_values=None, metrics=N
                            mutation_type=mutation_type,
                            mutation_probability=mutation_probability,
                            on_generation=on_generation,
-                        #    parallel_processing=["process", 10]
+                           #    parallel_processing=["process", 10]
                            )
     ga_instance.run()
     solution, _, _ = ga_instance.best_solution()
