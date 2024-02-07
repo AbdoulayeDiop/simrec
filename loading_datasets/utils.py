@@ -40,7 +40,14 @@ def handle_na(frame, drop_first=True, min_samples_after_drop=0.8, max_nan_per_at
 def load_openml_data(data_id, data_type="mixed"):
     try:
         dataset = openml.datasets.get_dataset(
-            data_id, download_data=True, download_qualities=False, download_features_meta_data=False)
+            str(data_id),
+            download_data=True,
+            download_qualities=False,
+            download_features_meta_data=False
+        )
+        if len(dataset.default_target_attribute.split(','))>1:
+            print(f"Dataset with id {data_id} is a multilabel dataset")
+            return None
         X, y, categorical_indicator, attribute_names = dataset.get_data(
             target=dataset.default_target_attribute
         )

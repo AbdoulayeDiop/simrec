@@ -211,7 +211,7 @@ if __name__=="__main__":
     if args.datasetsdir is not None:
         filenames += [os.path.join(args.datasetsdir, filename)
                         for filename in os.listdir(args.datasetsdir)
-                        if filename.split('.')[0] not in (meta_df.index if meta_df is not None else [])]
+                        if int(filename.split('.')[0]) not in (meta_df.index if meta_df is not None else [])]
 
     datasets = []
     for filename in filenames:
@@ -220,6 +220,7 @@ if __name__=="__main__":
             data["id"] = filename.split("/")[-1].split(".")[0]
         datasets.append(data)
 
+    print(f"{len(datasets)} to handle")
     print("Computing meta-features...")
     start = time.time()
     list_ret = Parallel(n_jobs=int(args.jobs), verbose=60)(

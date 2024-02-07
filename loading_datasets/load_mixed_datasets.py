@@ -8,6 +8,7 @@ import argparse
 import pickle
 import openml
 import numpy as np
+import pandas as pd
 from utils import load_openml_data  # pylint: disable=wrong-import-position
 
 parser = argparse.ArgumentParser(
@@ -22,7 +23,7 @@ def check_name(name):
     valid = valid and name not in \
         ["usp05", "KDDCup99", "musk" "haberman",
         "energy-efficiency", "albert", "rl",
-        "Asteroid_Dataset", "RelevantImagesDatasetTEST"]
+        "AsterodidDataset", "RelevantImagesDatasetTEST"]
     return valid
 
 
@@ -32,43 +33,55 @@ df = df[df.NumberOfSymbolicFeatures >= 2]
 df = df[df.NumberOfInstances >= 30]
 df = df[df.NumberOfMissingValues <= 0.1 *
         df.NumberOfFeatures*df.NumberOfInstances]
-# df = df[df.NumberOfMissingValues == 0]
-# df = df[df.NumberOfClasses < 100]
 df = df[df.NumberOfClasses >= 2]
-# df = df[df.version == 1]
-for indices in df.groupby(["did"]).indices:
-    print(min(df.iloc[indices].version.values))
 
-# tasks = openml.tasks.list_tasks(task_type=openml.tasks.TaskType.CLUSTERING)
-# datasets_used_for_clustering = np.unique([v["did"] for v in tasks.values()])
+dataset_list = []
 
-# df = df[df.index.isin(datasets_used_for_clustering)]
-# df = df[df.name.apply(check_name)]
+for name, indices in df.groupby(["name"]).indices.items():
+    if check_name(name):
+        i = np.argmin(df.iloc[indices].version.values)
+        did, version = df.iloc[indices[i]][["did", "version"]]
+        dataset_list.append({
+            "did": did,
+            "name": name,
+            "version": version
+        })
 
-# n_matching_datasets = len(df)
-# print(f"{n_matching_datasets} matching data sets found!")
-# for id_, name in zip(df.index.values, df.name.values):
-#     print(id_, name)
+# print(len(dataset_list))
 
-# already_loaded_datasets = [int(filename.split('.')[0])
-#                            for filename in os.listdir(args.outputdir)]
+clustering_tasks = openml.tasks.list_tasks(task_type=openml.tasks.TaskType.CLUSTERING, output_format='dataframe')
+classification_tasks = openml.tasks.list_tasks(task_type=openml.tasks.TaskType.SUPERVISED_CLASSIFICATION, output_format='dataframe')
+dataset_list = [d for d in dataset_list if d["name"] in clustering_tasks.name.tolist() + classification_tasks.name.tolist()]
+# print(len(dataset_list))
 
-# for data_id in df.index:
-#     if data_id not in already_loaded_datasets:
-#         print()
-#         print(
-#             f"Loading dataset with id ({data_id}) shape \
-# ({df.loc[data_id, 'NumberOfInstances']}, {df.loc[data_id, 'NumberOfFeatures']})...")
-#         data = load_openml_data(data_id)
-#         if data is not None:
-#             n_samples = len(data["samples"])
-#             if n_samples > 1e4:
-#                 sub_samples = np.random.choice(n_samples, size=10000, replace=False)
-#                 data["Xnum"] = data["Xnum"][sub_samples]
-#                 data["Xcat"] = data["Xcat"][sub_samples]
-#                 data["y"] = data["y"][sub_samples]
-#                 data["samples"] = data["samples"][sub_samples]
-#             filename = os.path.join(args.outputdir, f"{data_id}.pickle")
-#             with open(filename, "wb") as f:
-#                 pickle.dump(data, f)
-#         print("DONE")
+n_matching_datasets = len(dataset_list)
+print(f"{n_matching_datasets} matching data sets found!")
+for d in dataset_list:
+    print(d)
+
+already_loaded_datasets = [int(filename.split('.')[0])
+                           for filename in os.listdir(args.outputdir)]
+
+for d in dataset_list:
+    did = d["did"]
+    if did not in already_loaded_datasets:
+        print()
+        print(
+            f"Loading dataset with id ({did})...", end="")
+        data = load_openml_data(did)
+        if data is not None:
+            n_samples = len(data["samples"])
+            if n_samples > 1e4:
+                print(
+                    f"shape ({data['Xnum'].shape[0]}, {data['Xnum'].shape[1]+data['Xcat'].shape[1]})",
+                    end="..."
+                )
+                sub_samples = np.random.choice(n_samples, size=10000, replace=False)
+                data["Xnum"] = data["Xnum"][sub_samples]
+                data["Xcat"] = data["Xcat"][sub_samples]
+                data["y"] = data["y"][sub_samples]
+                data["samples"] = data["samples"][sub_samples]
+            filename = os.path.join(args.outputdir, f"{did}.pickle")
+            with open(filename, "wb") as f:
+                pickle.dump(data, f)
+        print("DONE")
