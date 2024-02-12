@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import minmax_scale, StandardScaler
 from sklearn.model_selection import cross_val_score, KFold, cross_val_predict, GridSearchCV
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
 from ranking import ALL_MODELS, scorer, scorer_func
-from ga import mfs_plus_hpo, create_encoder_decoder, aeknn_hpo
+from ga import mfs_plus_hpo_knn, mfs_plus_hpo_dtree, create_encoder_decoder, aeknn_hpo
 import torch
 from meta_model import AEKNN
 from utils import load_meta_dataset
@@ -41,9 +42,9 @@ proposed_attributes_statistics = [
 ]
 
 
-def grid_search_cv_predict(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
+def grid_search_cv_predict_knn(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
     parameters = {
-        'n_neighbors': [v for v in range(1, 26) if v <= X.shape[0]/2],
+        'n_neighbors': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
         'metric': ["euclidean", "manhattan", "cosine"],
         'weights': ["uniform", "distance"]
     }
@@ -59,8 +60,25 @@ def grid_search_cv_predict(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1
     knn = KNeighborsRegressor(**gridcv.best_params_)
     return cross_val_predict(knn, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
 
+def grid_search_cv_predict_dtree(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
+    parameters = {
+        'min_samples_leaf': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
+        'max_features': [None, "sqrt", "log2"],
+    }
+    dtree = DecisionTreeRegressor()
+    gridcv = GridSearchCV(dtree, parameters,
+                          scoring=scorer,
+                          cv=n_splits,
+                          verbose=verbose,
+                          error_score='raise',
+                          refit=False,
+                          n_jobs=n_jobs
+                          ).fit(X, Y)
+    dtree = DecisionTreeRegressor(**gridcv.best_params_)
+    return cross_val_predict(dtree, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
 
-OUTPUT_DIR = "data/training_red"
+
+OUTPUT_DIR = "data/training"
 BENCHMARK_RESULTS_DIR = "../meta_dataset_creation/data/benchmark_results/"
 META_FEATURES_FILE = "../meta_dataset_creation/data/meta_features/original/meta_features.csv"
 N_SPLITS = 10
@@ -82,8 +100,8 @@ n_neighbors_values = [1, 5, 10, 15, 20, 30]
 metrics = ["euclidean", "manhattan", "cosine"]
 weights = ["uniform", "distance"]
 
-for algorithm in ['haverage']:
-    for eval_metric in ["acc", "sil", "ari", "purity"]:
+for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
+    for eval_metric in [ "sil", "ari", "acc"]:
         print(algorithm, eval_metric,
             "##################################################")
         obj = {}
@@ -117,19 +135,27 @@ for algorithm in ['haverage']:
         X = sc.transform(X)
         X2 = X[:, [i for i in range(X.shape[1]) if mixed_meta_df.columns.values[i]
                 in dataset_statistics+attributes_statistics]]
+
+        np.random.seed(1234)
+        random_permutation = np.random.permutation(X.shape[0])
+        X = X[random_permutation]
+        X2 = X2[random_permutation]
+        Y = Y[random_permutation]
+        Yn = Yn[random_permutation]
         print(f"X: {X.shape}, X2: {X2.shape}, Y: {Y.shape}")
 
         if "train_results" not in obj:
             obj["train_results"] = {}
         ###############################################################
         model_name = "AR"
-        if model_name not in obj["train_results"]:
+        if True or model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             obj["train_results"][model_name]["pred"] = np.zeros(shape=Y.shape)
+            # obj["train_results"][model_name]["pred"] = np.array([[np.mean(yj[yj>-1]) for yj in Y.T] for _ in Y])
             for train, test in KFold(n_splits=N_SPLITS).split(X):
                 obj["train_results"][model_name]["pred"][test] = np.array(
-                    [np.mean(Y[train], axis=0) for _ in test])
+                    [[np.mean(yj[yj>-1]) for yj in Y[train].T] for _ in test])
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
             print(f"mean {eval_metric}:",  score)
@@ -140,11 +166,11 @@ for algorithm in ['haverage']:
 
         ###############################################################
         model_name = "LMF-KNN"
-        if model_name not in obj["train_results"]:
+        if True or model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = \
-                grid_search_cv_predict(X2, Y, n_splits=N_SPLITS)
+                grid_search_cv_predict_knn(X2, Y, n_splits=N_SPLITS)
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
             print("params:", obj["train_results"][model_name]["params"])
@@ -156,10 +182,10 @@ for algorithm in ['haverage']:
 
         ###############################################################
         model_name = "AMF-KNN"
-        if model_name not in obj["train_results"]:
+        if True or model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
-            obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = grid_search_cv_predict(
+            obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = grid_search_cv_predict_knn(
                 X, Y, n_splits=N_SPLITS)
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
@@ -175,8 +201,8 @@ for algorithm in ['haverage']:
         if True or model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
-            lmf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo(
-                X2, Y, num_generations=500, pop_size=16)
+            lmf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
+                X2, Y, num_generations=500, pop_size=32)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 lmf_fs_knn, X2[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = lmf_fs_knn.get_params()
@@ -195,8 +221,8 @@ for algorithm in ['haverage']:
         if True or model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
-            amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo(
-                X, Y, num_generations=500, pop_size=16)
+            amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
+                X, Y, num_generations=500, pop_size=32)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 amf_fs_knn, X[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = amf_fs_knn.get_params()
@@ -211,89 +237,165 @@ for algorithm in ['haverage']:
             pickle.dump(obj, f)
 
         ###############################################################
-        model_name = "LMF-AE-KNN"
-        if model_name not in obj["train_results"]:
-            print(model_name)
-            obj["train_results"][model_name] = {}
-            obj["train_results"][model_name]["pred"] = np.zeros(Y.shape)
-            best_fitness = 0
-            for n_neurons in nn_structs:
-                for n_neighbors in n_neighbors_values:
-                    for metric in metrics:
-                        for w in weights:
-                            print(
-                                f"n_neurons: {n_neurons}, n_neighbors: {n_neighbors}, metric: {metric}, w: {w}", end=", ")
-                            # fitness = 0
-                            Y_pred = np.zeros(shape=Y.shape)
-                            for train, test in KFold(n_splits=N_SPLITS).split(X2):
-                                encoder, decoder = create_encoder_decoder(
-                                    X2.shape[1], n_neurons)
-                                aeknn = AEKNN(encoder, decoder, n_neighbors,
-                                            metric, w, device=device)
-                                aeknn.fit(X2[train], Y[train], ae_fit_params)
-                                Y_pred[test] = aeknn.predict(X2[test])
-                                # fitness += scorer_func(Y[test], Y_pred[test])
-                            # fitness /= N_SPLITS
-                            fitness = scorer_func(Y, Y_pred)
-                            print(f"fitness: {fitness}")
-                            if fitness > best_fitness:
-                                best_fitness = fitness
-                                obj["train_results"][model_name]["pred"] = Y_pred
-                                obj["train_results"][model_name]["params"] = {
-                                    "n_neurons": n_neurons,
-                                    "n_neighbors": n_neighbors,
-                                    "metric": metric,
-                                    "w": w,
-                                }
-            score = np.mean([y[y > -1][np.argmax(obj["train_results"]
-                            [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
-            print("params:", obj["train_results"][model_name]["params"])
-            print(f"mean {eval_metric}:",  score)
-            print()
+        # model_name = "LMF-AE-KNN"
+        # if model_name not in obj["train_results"]:
+        #     print(model_name)
+        #     obj["train_results"][model_name] = {}
+        #     obj["train_results"][model_name]["pred"] = np.zeros(Y.shape)
+        #     best_fitness = 0
+        #     for n_neurons in nn_structs:
+        #         for n_neighbors in n_neighbors_values:
+        #             for metric in metrics:
+        #                 for w in weights:
+        #                     print(
+        #                         f"n_neurons: {n_neurons}, n_neighbors: {n_neighbors}, metric: {metric}, w: {w}", end=", ")
+        #                     # fitness = 0
+        #                     Y_pred = np.zeros(shape=Y.shape)
+        #                     for train, test in KFold(n_splits=N_SPLITS).split(X2):
+        #                         encoder, decoder = create_encoder_decoder(
+        #                             X2.shape[1], n_neurons)
+        #                         aeknn = AEKNN(encoder, decoder, n_neighbors,
+        #                                     metric, w, device=device)
+        #                         aeknn.fit(X2[train], Y[train], ae_fit_params)
+        #                         Y_pred[test] = aeknn.predict(X2[test])
+        #                         # fitness += scorer_func(Y[test], Y_pred[test])
+        #                     # fitness /= N_SPLITS
+        #                     fitness = scorer_func(Y, Y_pred)
+        #                     print(f"fitness: {fitness}")
+        #                     if fitness > best_fitness:
+        #                         best_fitness = fitness
+        #                         obj["train_results"][model_name]["pred"] = Y_pred
+        #                         obj["train_results"][model_name]["params"] = {
+        #                             "n_neurons": n_neurons,
+        #                             "n_neighbors": n_neighbors,
+        #                             "metric": metric,
+        #                             "w": w,
+        #                         }
+        #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
+        #                     [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
+        #     print("params:", obj["train_results"][model_name]["params"])
+        #     print(f"mean {eval_metric}:",  score)
+        #     print()
 
-        with open(filename, "wb") as f:
-            pickle.dump(obj, f)
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
 
         ###############################################################
-        model_name = "AMF-AE-KNN"
-        if model_name not in obj["train_results"]:
-            print(model_name)
-            obj["train_results"][model_name] = {}
-            obj["train_results"][model_name]["pred"] = np.zeros(Y.shape)
-            best_fitness = 0
-            for n_neurons in nn_structs:
-                for n_neighbors in n_neighbors_values:
-                    for metric in metrics:
-                        for w in weights:
-                            print(
-                                f"n_neurons: {n_neurons}, n_neighbors: {n_neighbors}, metric: {metric}, w: {w}", end=", ")
-                            # fitness = 0
-                            Y_pred = np.zeros(shape=Y.shape)
-                            for train, test in KFold(n_splits=N_SPLITS).split(X):
-                                encoder, decoder = create_encoder_decoder(
-                                    X.shape[1], n_neurons)
-                                aeknn = AEKNN(encoder, decoder, n_neighbors,
-                                            metric, w, device=device)
-                                aeknn.fit(X[train], Y[train], ae_fit_params)
-                                Y_pred[test] = aeknn.predict(X[test])
-                                # fitness += scorer_func(Y[test], Y_pred[test])
-                            # fitness /= N_SPLITS
-                            fitness = scorer_func(Y, Y_pred)
-                            print(f"fitness: {fitness}")
-                            if fitness > best_fitness:
-                                best_fitness = fitness
-                                obj["train_results"][model_name]["pred"] = Y_pred
-                                obj["train_results"][model_name]["params"] = {
-                                    "n_neurons": n_neurons,
-                                    "n_neighbors": n_neighbors,
-                                    "metric": metric,
-                                    "w": w,
-                                }
-            score = np.mean([y[y > -1][np.argmax(obj["train_results"]
-                            [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
-            print("params:", obj["train_results"][model_name]["params"])
-            print(f"mean {eval_metric}:",  score)
-            print()
+        # model_name = "AMF-AE-KNN"
+        # if model_name not in obj["train_results"]:
+        #     print(model_name)
+        #     obj["train_results"][model_name] = {}
+        #     obj["train_results"][model_name]["pred"] = np.zeros(Y.shape)
+        #     best_fitness = 0
+        #     for n_neurons in nn_structs:
+        #         for n_neighbors in n_neighbors_values:
+        #             for metric in metrics:
+        #                 for w in weights:
+        #                     print(
+        #                         f"n_neurons: {n_neurons}, n_neighbors: {n_neighbors}, metric: {metric}, w: {w}", end=", ")
+        #                     # fitness = 0
+        #                     Y_pred = np.zeros(shape=Y.shape)
+        #                     for train, test in KFold(n_splits=N_SPLITS).split(X):
+        #                         encoder, decoder = create_encoder_decoder(
+        #                             X.shape[1], n_neurons)
+        #                         aeknn = AEKNN(encoder, decoder, n_neighbors,
+        #                                     metric, w, device=device)
+        #                         aeknn.fit(X[train], Y[train], ae_fit_params)
+        #                         Y_pred[test] = aeknn.predict(X[test])
+        #                         # fitness += scorer_func(Y[test], Y_pred[test])
+        #                     # fitness /= N_SPLITS
+        #                     fitness = scorer_func(Y, Y_pred)
+        #                     print(f"fitness: {fitness}")
+        #                     if fitness > best_fitness:
+        #                         best_fitness = fitness
+        #                         obj["train_results"][model_name]["pred"] = Y_pred
+        #                         obj["train_results"][model_name]["params"] = {
+        #                             "n_neurons": n_neurons,
+        #                             "n_neighbors": n_neighbors,
+        #                             "metric": metric,
+        #                             "w": w,
+        #                         }
+        #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
+        #                     [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
+        #     print("params:", obj["train_results"][model_name]["params"])
+        #     print(f"mean {eval_metric}:",  score)
+        #     print()
 
-        with open(filename, "wb") as f:
-            pickle.dump(obj, f)
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
+
+
+
+
+
+        ###############################################################
+        # model_name = "LMF-DTree"
+        # if True or model_name not in obj["train_results"]:
+        #     print(model_name)
+        #     obj["train_results"][model_name] = {}
+        #     obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = \
+        #         grid_search_cv_predict_dtree(X2, Yn, n_splits=N_SPLITS)
+        #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
+        #                     [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
+        #     print("params:", obj["train_results"][model_name]["params"])
+        #     print(f"mean {eval_metric}:",  score)
+        #     print()
+
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
+
+        # ###############################################################
+        # model_name = "AMF-DTree"
+        # if True or model_name not in obj["train_results"]:
+        #     print(model_name)
+        #     obj["train_results"][model_name] = {}
+        #     obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = grid_search_cv_predict_dtree(
+        #         X, Yn, n_splits=N_SPLITS)
+        #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
+        #                     [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
+        #     print("params:", obj["train_results"][model_name]["params"])
+        #     print(f"mean {eval_metric}:",  score)
+        #     print()
+
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
+
+        # ###############################################################
+        # model_name = "LMF-FS-DTree"
+        # if True or model_name not in obj["train_results"]:
+        #     print(model_name)
+        #     obj["train_results"][model_name] = {}
+        #     lmf_fs_dtree, selected_feats, _, _, _ = mfs_plus_hpo_dtree(
+        #         X2, Y, num_generations=500, pop_size=32)
+        #     obj["train_results"][model_name]["pred"] = cross_val_predict(
+        #         lmf_fs_dtree, X2[:, selected_feats], Yn, cv=N_SPLITS, n_jobs=-1)
+        #     obj["train_results"][model_name]["params"] = lmf_fs_dtree.get_params()
+        #     obj["train_results"][model_name]["selected_features"] = selected_feats
+        #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
+        #                     [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
+        #     print("params:", obj["train_results"][model_name]["params"])
+        #     print(f"mean {eval_metric}:",  score)
+        #     print()
+
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
+
+        # ###############################################################
+        # model_name = "AMF-FS-DTree"
+        # if True or model_name not in obj["train_results"]:
+        #     print(model_name)
+        #     obj["train_results"][model_name] = {}
+        #     amf_fs_dtree, selected_feats, _, _, _ = mfs_plus_hpo_dtree(
+        #         X, Y, num_generations=500, pop_size=32)
+        #     obj["train_results"][model_name]["pred"] = cross_val_predict(
+        #         amf_fs_dtree, X[:, selected_feats], Yn, cv=N_SPLITS, n_jobs=-1)
+        #     obj["train_results"][model_name]["params"] = amf_fs_dtree.get_params()
+        #     obj["train_results"][model_name]["selected_features"] = selected_feats
+        #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
+        #                     [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
+        #     print("params:", obj["train_results"][model_name]["params"])
+        #     print(f"mean {eval_metric}:",  score)
+        #     print()
+
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)

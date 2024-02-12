@@ -7,12 +7,12 @@ import torch.nn as nn
 from meta_model import AEKNN
 
 
-def mfs_plus_hpo(X, Y, n_neighbors_values=None, metrics=None, weights=None, num_generations=100,
+def mfs_plus_hpo_knn(X, Y, n_neighbors_values=None, metrics=None, weights=None, num_generations=100,
                  pop_size=8, parent_selection_type="sss", crossover_probability=0.9,
                  mutation_probability=0.1, crossover_type="uniform", mutation_type="random",
                  n_splits=10, scorer=scorer):
     if n_neighbors_values is None:
-        n_neighbors_values = np.arange(1, 26)
+        n_neighbors_values = np.arange(1, 32, 2)
     if metrics is None:
         metrics = ["euclidean", "manhattan", "cosine"]
     if weights is None:
@@ -33,9 +33,9 @@ def mfs_plus_hpo(X, Y, n_neighbors_values=None, metrics=None, weights=None, num_
         knn = ALL_MODELS["KNN"](n_neighbors=n_neighbors,
                                 metric=metric, weights=w)
         Y_pred = cross_val_predict(
-            knn, X[:, selected_feats], Y, cv=10, n_jobs=-1)
+            knn, X[:, selected_feats], Y, cv=n_splits, n_jobs=-1)
         fitness = scorer_func(Y, Y_pred)
-        return fitness - 3e-4*sum(selected_feats)
+        return fitness #- 3e-4*sum(selected_feats)
 
     fitness_function = fitness_func
     num_parents_mating = pop_size//2
@@ -68,6 +68,61 @@ def mfs_plus_hpo(X, Y, n_neighbors_values=None, metrics=None, weights=None, num_
     knn = ALL_MODELS["KNN"](n_neighbors=n_neighbors, metric=metric, weights=w)
     return knn, selected_feats, n_neighbors, metric, w, ga_instance
 
+
+def mfs_plus_hpo_dtree(X, Y, min_samples_leaf_values=None, max_features=None, num_generations=100,
+                 pop_size=8, parent_selection_type="sss", crossover_probability=0.9,
+                 mutation_probability=0.1, crossover_type="uniform", mutation_type="random",
+                 n_splits=10, scorer=scorer):
+    if min_samples_leaf_values is None:
+        min_samples_leaf_values = np.arange(1, 32, 2)
+    if max_features is None:
+        max_features = [None, "sqrt", "log2"]
+
+    def on_generation(ga_instance):
+        if ga_instance.generations_completed % 10 == 0:
+            _, fitness, _ = ga_instance.best_solution(
+                pop_fitness=ga_instance.last_generation_fitness)
+            print(
+                f"GEN: {ga_instance.generations_completed}, Best fitness: {fitness}")
+
+    def fitness_func(ga_instance, solution, solution_idx):
+        selected_feats = np.array(solution[:X.shape[1]]) > 0
+        min_samples_leaf = solution[X.shape[1]]
+        max_f = max_features[solution[X.shape[1]+1]]
+        model = ALL_MODELS["DTree"](min_samples_leaf=min_samples_leaf, max_features=max_f)
+        Y_pred = cross_val_predict(model, X[:, selected_feats], Y, cv=n_splits, n_jobs=-1)
+        fitness = scorer_func(Y, Y_pred)
+        return fitness #- 3e-4*sum(selected_feats)
+
+    fitness_function = fitness_func
+    num_parents_mating = pop_size//2
+    sol_per_pop = pop_size
+    num_genes = X.shape[1] + 2
+    gene_type = int
+    gene_space = [[0, 1] for _ in range(
+        X.shape[1])] + [min_samples_leaf_values, range(len(max_features))]
+
+    ga_instance = pygad.GA(num_generations=num_generations,
+                           num_parents_mating=num_parents_mating,
+                           fitness_func=fitness_function,
+                           sol_per_pop=sol_per_pop,
+                           num_genes=num_genes,
+                           gene_type=gene_type,
+                           gene_space=gene_space,
+                           parent_selection_type=parent_selection_type,
+                           crossover_type=crossover_type,
+                           crossover_probability=crossover_probability,
+                           mutation_type=mutation_type,
+                           mutation_probability=mutation_probability,
+                           on_generation=on_generation
+                           )
+    ga_instance.run()
+    solution, _, _ = ga_instance.best_solution()
+    selected_feats = np.array(solution[:X.shape[1]]) > 0
+    min_samples_leaf = solution[X.shape[1]]
+    max_f = max_features[solution[X.shape[1]+1]]
+    model = ALL_MODELS["DTree"](min_samples_leaf=min_samples_leaf, max_features=max_f)
+    return model, selected_feats, min_samples_leaf, max_f, ga_instance
 
 def create_encoder_decoder(input_dim, n_neurons):
     input_dim, output_dim = input_dim, input_dim

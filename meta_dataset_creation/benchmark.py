@@ -33,7 +33,6 @@ w_values = np.linspace(0, 1, 51)
 
 np.random.seed(0)
 
-
 def eval_haverage(Dnum, Dcat, y, n_clusters):
     clusters = [haverage(Dnum, Dcat, w, n_clusters) for w in w_values]
     result = {}
