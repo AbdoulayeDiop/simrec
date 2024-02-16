@@ -8,8 +8,8 @@ from meta_model import AEKNN
 
 
 def mfs_plus_hpo_knn(X, Y, n_neighbors_values=None, metrics=None, weights=None, num_generations=100,
-                 pop_size=8, parent_selection_type="sss", crossover_probability=0.9,
-                 mutation_probability=0.1, crossover_type="uniform", mutation_type="random",
+                 pop_size=8, parent_selection_type="sss", crossover_probability=0.95,
+                 mutation_probability=0.05, crossover_type="uniform", mutation_type="random",
                  n_splits=10, scorer=scorer):
     if n_neighbors_values is None:
         n_neighbors_values = np.arange(1, 32, 2)
