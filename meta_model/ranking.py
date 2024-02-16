@@ -79,7 +79,7 @@ class KNNRanker(KNeighborsRegressor):
 
     def grid_search(self, X, Y, groups=None, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1, refit=True):
         parameters = {
-            'n_neighbors': [v for v in range(1, 26) if v <= X.shape[0]/2],
+            'n_neighbors': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
             'metric': ["euclidean", "manhattan", "cosine"],
             'weights': ["uniform", "distance"]
         }
@@ -260,7 +260,7 @@ class MKNN(BaseEstimator, MultipleRegressors):
 
     def cross_val_fit(self, X, Y, groups=None, n_splits=5, scorer=scorer, return_cv_scores=False, verbose=0, n_jobs=-1):
         parameters = {
-            'n_neighbors': [v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
+            'n_neighbors': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],#[v for v in [1, 5, 10, 20, 30] if v <= X.shape[0]/2],
             'metric': ["euclidean", "manhattan", "cosine"],
             'weights': ["uniform", "distance"]
         }

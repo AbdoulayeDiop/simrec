@@ -10,6 +10,7 @@ from sklearn.preprocessing import minmax_scale, StandardScaler
 from sklearn.model_selection import cross_val_score, KFold, cross_val_predict, GridSearchCV
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
 from ranking import ALL_MODELS, scorer, scorer_func
 from ga import mfs_plus_hpo_knn, mfs_plus_hpo_dtree, create_encoder_decoder, aeknn_hpo
 import torch
@@ -21,7 +22,7 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-np.random.seed(0)
+np.random.seed(1234)
 
 dataset_statistics = ["n_instances", "n_features",
                       "dim", "num_on_cat", "n_num_att", "n_cat_att"]
@@ -48,17 +49,9 @@ def grid_search_cv_predict_knn(X, Y, n_splits=5, scorer=scorer, verbose=0, n_job
         'metric': ["euclidean", "manhattan", "cosine"],
         'weights': ["uniform", "distance"]
     }
-    knn = KNeighborsRegressor()
-    gridcv = GridSearchCV(knn, parameters,
-                          scoring=scorer,
-                          cv=n_splits,
-                          verbose=verbose,
-                          error_score='raise',
-                          refit=False,
-                          n_jobs=n_jobs
-                          ).fit(X, Y)
-    knn = KNeighborsRegressor(**gridcv.best_params_)
-    return cross_val_predict(knn, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
+    knn = ALL_MODELS["KNN"]().cross_val_fit(X, Y, n_splits=n_splits)
+    knn = ALL_MODELS["KNN"](**knn.get_params())
+    return cross_val_predict(knn, X, Y, cv=n_splits, n_jobs=-1), knn.get_params()
 
 def grid_search_cv_predict_dtree(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
     parameters = {
@@ -77,8 +70,25 @@ def grid_search_cv_predict_dtree(X, Y, n_splits=5, scorer=scorer, verbose=0, n_j
     dtree = DecisionTreeRegressor(**gridcv.best_params_)
     return cross_val_predict(dtree, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
 
+def grid_search_cv_predict_rf(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
+    parameters = {
+        'min_samples_leaf': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
+        'max_features': [None, "sqrt", "log2"],
+    }
+    dtree = DecisionTreeRegressor()
+    gridcv = GridSearchCV(dtree, parameters,
+                          scoring=scorer,
+                          cv=n_splits,
+                          verbose=verbose,
+                          error_score='raise',
+                          refit=False,
+                          n_jobs=n_jobs
+                          ).fit(X, Y)
+    dtree = DecisionTreeRegressor(**gridcv.best_params_)
+    return cross_val_predict(dtree, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
 
-OUTPUT_DIR = "data/training"
+
+OUTPUT_DIR = "data/training_final"
 BENCHMARK_RESULTS_DIR = "../meta_dataset_creation/data/benchmark_results/"
 META_FEATURES_FILE = "../meta_dataset_creation/data/meta_features/original/meta_features.csv"
 N_SPLITS = 10
@@ -136,12 +146,6 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
         X2 = X[:, [i for i in range(X.shape[1]) if mixed_meta_df.columns.values[i]
                 in dataset_statistics+attributes_statistics]]
 
-        np.random.seed(1234)
-        random_permutation = np.random.permutation(X.shape[0])
-        X = X[random_permutation]
-        X2 = X2[random_permutation]
-        Y = Y[random_permutation]
-        Yn = Yn[random_permutation]
         print(f"X: {X.shape}, X2: {X2.shape}, Y: {Y.shape}")
 
         if "train_results" not in obj:
@@ -155,7 +159,7 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
             # obj["train_results"][model_name]["pred"] = np.array([[np.mean(yj[yj>-1]) for yj in Y.T] for _ in Y])
             for train, test in KFold(n_splits=N_SPLITS).split(X):
                 obj["train_results"][model_name]["pred"][test] = np.array(
-                    [[np.mean(yj[yj>-1]) for yj in Y[train].T] for _ in test])
+                    [[np.mean(yj) for yj in Y[train].T] for _ in test])
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
             print(f"mean {eval_metric}:",  score)
@@ -166,7 +170,7 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
 
         ###############################################################
         model_name = "LMF-KNN"
-        if True or model_name not in obj["train_results"]:
+        if model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = \
@@ -182,7 +186,7 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
 
         ###############################################################
         model_name = "AMF-KNN"
-        if True or model_name not in obj["train_results"]:
+        if model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = grid_search_cv_predict_knn(
@@ -198,11 +202,11 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
 
         ###############################################################
         model_name = "LMF-FS-KNN"
-        if True or model_name not in obj["train_results"]:
+        if model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             lmf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X2, Y, num_generations=500, pop_size=32)
+                X2, Y, num_generations=300, pop_size=8)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 lmf_fs_knn, X2[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = lmf_fs_knn.get_params()
@@ -218,11 +222,11 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
 
         ###############################################################
         model_name = "AMF-FS-KNN"
-        if True or model_name not in obj["train_results"]:
+        if model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X, Y, num_generations=500, pop_size=32)
+                X, Y, num_generations=600, pop_size=8)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 amf_fs_knn, X[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = amf_fs_knn.get_params()
@@ -330,11 +334,11 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
 
         ###############################################################
         # model_name = "LMF-DTree"
-        # if True or model_name not in obj["train_results"]:
+        # if model_name not in obj["train_results"]:
         #     print(model_name)
         #     obj["train_results"][model_name] = {}
         #     obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = \
-        #         grid_search_cv_predict_dtree(X2, Yn, n_splits=N_SPLITS)
+        #         grid_search_cv_predict_dtree(X2, Y, n_splits=N_SPLITS)
         #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
         #                     [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
         #     print("params:", obj["train_results"][model_name]["params"])
@@ -346,11 +350,11 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
 
         # ###############################################################
         # model_name = "AMF-DTree"
-        # if True or model_name not in obj["train_results"]:
+        # if model_name not in obj["train_results"]:
         #     print(model_name)
         #     obj["train_results"][model_name] = {}
         #     obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = grid_search_cv_predict_dtree(
-        #         X, Yn, n_splits=N_SPLITS)
+        #         X, Y, n_splits=N_SPLITS)
         #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
         #                     [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
         #     print("params:", obj["train_results"][model_name]["params"])
@@ -362,13 +366,13 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
 
         # ###############################################################
         # model_name = "LMF-FS-DTree"
-        # if True or model_name not in obj["train_results"]:
+        # if model_name not in obj["train_results"]:
         #     print(model_name)
         #     obj["train_results"][model_name] = {}
         #     lmf_fs_dtree, selected_feats, _, _, _ = mfs_plus_hpo_dtree(
-        #         X2, Y, num_generations=500, pop_size=32)
+        #         X2, Y, num_generations=200, pop_size=8)
         #     obj["train_results"][model_name]["pred"] = cross_val_predict(
-        #         lmf_fs_dtree, X2[:, selected_feats], Yn, cv=N_SPLITS, n_jobs=-1)
+        #         lmf_fs_dtree, X2[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
         #     obj["train_results"][model_name]["params"] = lmf_fs_dtree.get_params()
         #     obj["train_results"][model_name]["selected_features"] = selected_feats
         #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
@@ -382,13 +386,13 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
 
         # ###############################################################
         # model_name = "AMF-FS-DTree"
-        # if True or model_name not in obj["train_results"]:
+        # if model_name not in obj["train_results"]:
         #     print(model_name)
         #     obj["train_results"][model_name] = {}
         #     amf_fs_dtree, selected_feats, _, _, _ = mfs_plus_hpo_dtree(
-        #         X, Y, num_generations=500, pop_size=32)
+        #         X, Y, num_generations=200, pop_size=8)
         #     obj["train_results"][model_name]["pred"] = cross_val_predict(
-        #         amf_fs_dtree, X[:, selected_feats], Yn, cv=N_SPLITS, n_jobs=-1)
+        #         amf_fs_dtree, X[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
         #     obj["train_results"][model_name]["params"] = amf_fs_dtree.get_params()
         #     obj["train_results"][model_name]["selected_features"] = selected_feats
         #     score = np.mean([y[y > -1][np.argmax(obj["train_results"]
