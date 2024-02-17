@@ -152,7 +152,7 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
             obj["train_results"] = {}
         ###############################################################
         model_name = "AR"
-        if True or model_name not in obj["train_results"]:
+        if model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             obj["train_results"][model_name]["pred"] = np.zeros(shape=Y.shape)
@@ -222,11 +222,11 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']:
 
         ###############################################################
         model_name = "AMF-FS-KNN"
-        if model_name not in obj["train_results"]:
+        if True or model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X, Y, num_generations=600, pop_size=8)
+                X, Y, num_generations=600, pop_size=16)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 amf_fs_knn, X[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = amf_fs_knn.get_params()
