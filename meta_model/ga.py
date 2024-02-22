@@ -19,7 +19,7 @@ def mfs_plus_hpo_knn(X, Y, n_neighbors_values=None, metrics=None, weights=None, 
         weights = ["uniform", "distance"]
 
     def on_generation(ga_instance):
-        if ga_instance.generations_completed % 10 == 0:
+        if ga_instance.generations_completed % 50 == 0:
             _, fitness, _ = ga_instance.best_solution(
                 pop_fitness=ga_instance.last_generation_fitness)
             print(

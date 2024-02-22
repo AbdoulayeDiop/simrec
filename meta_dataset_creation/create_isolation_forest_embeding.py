@@ -202,6 +202,7 @@ if __name__=="__main__":
     meta_df = None
     if os.path.isfile(OUTPUT_FILE):
         meta_df = pd.read_csv(OUTPUT_FILE, index_col="id")
+        meta_df.index = meta_df.index.astype(str)
     times = {}
     if os.path.isfile(TIME_FILE):
         with open(TIME_FILE, "r", encoding="utf-8") as f:
@@ -211,7 +212,7 @@ if __name__=="__main__":
     if args.datasetsdir is not None:
         filenames += [os.path.join(args.datasetsdir, filename)
                         for filename in os.listdir(args.datasetsdir)
-                        if int(filename.split('.')[0]) not in (meta_df.index if meta_df is not None else [])]
+                        if filename.split('.')[0] not in (meta_df.index if meta_df is not None else [])]
 
     datasets = []
     for filename in filenames:
