@@ -26,12 +26,11 @@ from scipy.stats import wasserstein_distance
 def mse(y_true, y_pred):
     return np.mean((y_true[y_true > 0]-y_pred[y_true > 0])**2)
 
-
-# scorer = make_scorer(lambda yt, yp: np.mean(ndcg(yt, yp, p=5)))
 scorer = make_scorer(lambda yt, yp: np.mean([y[y>-1][np.argmax(yp[i][y>-1])] for i, y in enumerate(yt)]))
 scorer_func = lambda yt, yp: np.mean([y[y>-1][np.argmax(yp[i][y>-1])] for i, y in enumerate(yt)])
-# scorer = make_scorer(mse, greater_is_better=False)
 
+# scorer = make_scorer(lambda yt, yp: np.mean(ndcg(yt, yp, p=10)))
+# scorer_func = lambda yt, yp: np.mean(ndcg(yt, yp, p=10))
 
 class LRRanker(linear.ElasticNet):
     def __init__(self, alpha=1, l1_ratio=0.5, **params) -> None:

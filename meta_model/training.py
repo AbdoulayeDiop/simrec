@@ -16,6 +16,7 @@ from ga import mfs_plus_hpo_knn, mfs_plus_hpo_dtree, create_encoder_decoder, aek
 import torch
 from meta_model import AEKNN
 from utils import load_meta_dataset
+from joblib import Parallel, delayed
 
 if torch.cuda.is_available():
     device = "cuda:0"
@@ -43,52 +44,69 @@ proposed_attributes_statistics = [
 ]
 
 
-def grid_search_cv_predict_knn(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
+# def grid_search_cv_predict_knn(X, Y, Yn, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
+#     parameters = {
+#         'n_neighbors': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
+#         'metric': ["euclidean", "manhattan", "cosine"],
+#         'weights': ["uniform", "distance"]
+#     }
+#     knn = ALL_MODELS["KNN"]().cross_val_fit(X, Y, n_splits=n_splits)
+#     knn = ALL_MODELS["KNN"](**knn.get_params())
+#     return cross_val_predict(knn, X, Y, cv=n_splits, n_jobs=-1), knn.get_params()
+
+def grid_search_cv_predict_knn(X, Y, Yn, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
     parameters = {
         'n_neighbors': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
         'metric': ["euclidean", "manhattan", "cosine"],
         'weights': ["uniform", "distance"]
     }
-    knn = ALL_MODELS["KNN"]().cross_val_fit(X, Y, n_splits=n_splits)
-    knn = ALL_MODELS["KNN"](**knn.get_params())
-    return cross_val_predict(knn, X, Y, cv=n_splits, n_jobs=-1), knn.get_params()
+    def evaluate(n_neighbors, metric, w):
+        knn = ALL_MODELS["KNN"](n_neighbors=n_neighbors, metric=metric, weights=w)
+        Y_pred = cross_val_predict(knn, X, Y, cv=n_splits)
+        fitness = scorer_func(Yn, Y_pred)
+        return fitness
+    list_params = [(n_neighbors, metric, w) for n_neighbors in parameters["n_neighbors"] for metric in parameters["metric"] for w in parameters["weights"]]
+    list_ret = Parallel(n_jobs=n_jobs)(delayed(evaluate)(*t) for t in list_params)
+    best_params = dict(zip(["n_neighbors", "metric", "weights"], list_params[np.argmax(list_ret)]))
+    knn = ALL_MODELS["KNN"](**best_params)
+    return cross_val_predict(knn, X, Y, cv=n_splits, n_jobs=-1), best_params
 
-def grid_search_cv_predict_dtree(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
-    parameters = {
-        'min_samples_leaf': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
-        'max_features': [None, "sqrt", "log2"],
-    }
-    dtree = DecisionTreeRegressor()
-    gridcv = GridSearchCV(dtree, parameters,
-                          scoring=scorer,
-                          cv=n_splits,
-                          verbose=verbose,
-                          error_score='raise',
-                          refit=False,
-                          n_jobs=n_jobs
-                          ).fit(X, Y)
-    dtree = DecisionTreeRegressor(**gridcv.best_params_)
-    return cross_val_predict(dtree, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
+# def grid_search_cv_predict_dtree(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
+#     parameters = {
+#         'min_samples_leaf': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
+#         'max_features': [None, "sqrt", "log2"],
+#     }
+#     dtree = DecisionTreeRegressor()
+#     gridcv = GridSearchCV(dtree, parameters,
+#                           scoring=scorer,
+#                           cv=n_splits,
+#                           verbose=verbose,
+#                           error_score='raise',
+#                           refit=False,
+#                           n_jobs=n_jobs
+#                           ).fit(X, Y)
+#     dtree = DecisionTreeRegressor(**gridcv.best_params_)
+#     return cross_val_predict(dtree, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
 
-def grid_search_cv_predict_rf(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
-    parameters = {
-        'min_samples_leaf': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
-        'max_features': [None, "sqrt", "log2"],
-    }
-    dtree = DecisionTreeRegressor()
-    gridcv = GridSearchCV(dtree, parameters,
-                          scoring=scorer,
-                          cv=n_splits,
-                          verbose=verbose,
-                          error_score='raise',
-                          refit=False,
-                          n_jobs=n_jobs
-                          ).fit(X, Y)
-    dtree = DecisionTreeRegressor(**gridcv.best_params_)
-    return cross_val_predict(dtree, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
+# def grid_search_cv_predict_rf(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
+#     parameters = {
+#         'min_samples_leaf': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
+#         'max_features': [None, "sqrt", "log2"],
+#     }
+#     dtree = DecisionTreeRegressor()
+#     gridcv = GridSearchCV(dtree, parameters,
+#                           scoring=scorer,
+#                           cv=n_splits,
+#                           verbose=verbose,
+#                           error_score='raise',
+#                           refit=False,
+#                           n_jobs=n_jobs
+#                           ).fit(X, Y)
+#     dtree = DecisionTreeRegressor(**gridcv.best_params_)
+#     return cross_val_predict(dtree, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
 
 
-OUTPUT_DIR = "data/training_final"
+OUTPUT_DIR = "data/training_ndcg"
 BENCHMARK_RESULTS_DIR = "../meta_dataset_creation/data/benchmark_results/"
 META_FEATURES_FILE = "../meta_dataset_creation/data/meta_features/original/meta_features.csv"
 N_SPLITS = 10
@@ -110,7 +128,7 @@ n_neighbors_values = [1, 5, 10, 15, 20, 30]
 metrics = ["euclidean", "manhattan", "cosine"]
 weights = ["uniform", "distance"]
 
-for algorithm in ['kprototypes']: #, 'fasterpam', 'haverage'
+for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'haverage'
     for eval_metric in [ "sil", "ari", "acc"]:
         print(algorithm, eval_metric,
             "##################################################")
@@ -131,13 +149,15 @@ for algorithm in ['kprototypes']: #, 'fasterpam', 'haverage'
         Y = benchmark_results.to_numpy()
         if eval_metric in ["acc", "purity"]:
             Yn = np.array([y/max(y) for y in Y])
-            # Yn[Yn > 0] **= 4
+            Yn[Yn > 0] **= 4
             Yn[Yn <= 0] = -1
         elif eval_metric == "ari":
             Yn = np.array([(y+0.5)/max(y+0.5) for y in Y])
+            Yn[Yn > 0] **= 4
             Yn[Yn <= 0] = -1
         else:
             Yn = np.array([(y+1)/max(y+1) for y in Y])
+            Yn[Yn > 0] **= 4
             Yn[Yn <= 0] = -1
 
         X = mixed_meta_df.to_numpy()
@@ -174,7 +194,7 @@ for algorithm in ['kprototypes']: #, 'fasterpam', 'haverage'
             print(model_name)
             obj["train_results"][model_name] = {}
             obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = \
-                grid_search_cv_predict_knn(X2, Y, n_splits=N_SPLITS)
+                grid_search_cv_predict_knn(X2, Y, Yn, n_splits=N_SPLITS)
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
             print("params:", obj["train_results"][model_name]["params"])
@@ -190,7 +210,7 @@ for algorithm in ['kprototypes']: #, 'fasterpam', 'haverage'
             print(model_name)
             obj["train_results"][model_name] = {}
             obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = grid_search_cv_predict_knn(
-                X, Y, n_splits=N_SPLITS)
+                X, Y, Yn, n_splits=N_SPLITS)
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
             print("params:", obj["train_results"][model_name]["params"])
@@ -206,7 +226,7 @@ for algorithm in ['kprototypes']: #, 'fasterpam', 'haverage'
             print(model_name)
             obj["train_results"][model_name] = {}
             lmf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X2, Y, num_generations=600, pop_size=16)
+                X2, Y, Yn, num_generations=600, pop_size=16)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 lmf_fs_knn, X2[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = lmf_fs_knn.get_params()
@@ -222,11 +242,11 @@ for algorithm in ['kprototypes']: #, 'fasterpam', 'haverage'
 
         ###############################################################
         model_name = "AMF-FS-KNN"
-        if True or model_name not in obj["train_results"]:
+        if model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X, Y, num_generations=600, pop_size=32)
+                X, Y, Yn, num_generations=600, pop_size=32)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 amf_fs_knn, X[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = amf_fs_knn.get_params()

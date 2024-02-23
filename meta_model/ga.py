@@ -7,7 +7,7 @@ import torch.nn as nn
 from meta_model import AEKNN
 
 
-def mfs_plus_hpo_knn(X, Y, n_neighbors_values=None, metrics=None, weights=None, num_generations=100,
+def mfs_plus_hpo_knn(X, Y, Yn, n_neighbors_values=None, metrics=None, weights=None, num_generations=100,
                  pop_size=8, parent_selection_type="sss", crossover_probability=0.95,
                  mutation_probability=0.05, crossover_type="uniform", mutation_type="random",
                  n_splits=10, scorer=scorer):
@@ -34,7 +34,7 @@ def mfs_plus_hpo_knn(X, Y, n_neighbors_values=None, metrics=None, weights=None, 
                                 metric=metric, weights=w)
         Y_pred = cross_val_predict(
             knn, X[:, selected_feats], Y, cv=n_splits, n_jobs=-1)
-        fitness = scorer_func(Y, Y_pred)
+        fitness = scorer_func(Yn, Y_pred)
         return fitness #- 3e-4*sum(selected_feats)
 
     fitness_function = fitness_func
