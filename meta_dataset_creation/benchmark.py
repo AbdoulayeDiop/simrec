@@ -33,35 +33,40 @@ w_values = np.linspace(0, 1, 51)
 
 np.random.seed(0)
 
-def eval_haverage(Dnum, Dcat, y, n_clusters):
-    clusters = [haverage(Dnum, Dcat, w, n_clusters) for w in w_values]
+def eval_haverage(Dnum, Dcat, y):
     result = {}
-    for eval_metric in EXTERNAL_EVAL_METRICS:
-        result[eval_metric] = []
-        for w, yp in zip(w_values, clusters):
-            score = - \
-                1 if yp is None else get_score(y, yp, eval_metric=eval_metric)
-            result[eval_metric].append({
-                "params": {
-                    "alpha": w,
-                    "n_clusters": n_clusters
-                },
-                "score": score
-            })
+    n_clusters_ground_truth = len(set(y))
+    for n_clusters in range(max(n_clusters_ground_truth-10, 2), n_clusters_ground_truth+11):
+        clusters = [haverage(Dnum, Dcat, w, n_clusters) for w in w_values]
+        if n_clusters == n_clusters_ground_truth:
+            for eval_metric in EXTERNAL_EVAL_METRICS:
+                if eval_metric not in result:
+                    result[eval_metric] = []
+                for w, yp in zip(w_values, clusters):
+                    score = - \
+                        1 if yp is None else get_score(y, yp, eval_metric=eval_metric)
+                    result[eval_metric].append({
+                        "params": {
+                            "alpha": w,
+                            "n_clusters": n_clusters
+                        },
+                        "score": score
+                    })
 
-    for eval_metric in INTERNAL_EVAL_METRICS:
-        result[eval_metric] = []
-        for w, yp in zip(w_values, clusters):
-            score = -1 if yp is None else \
-                get_unsupervised_score((1-w)*Dnum + w*Dcat, yp,
-                                       eval_metric=eval_metric, metric="precomputed")
-            result[eval_metric].append({
-                "params": {
-                    "alpha": w,
-                    "n_clusters": n_clusters
-                },
-                "score": score
-            })
+        for eval_metric in INTERNAL_EVAL_METRICS:
+            if eval_metric not in result:
+                result[eval_metric] = []
+            for w, yp in zip(w_values, clusters):
+                score = -1 if yp is None else \
+                    get_unsupervised_score((1-w)*Dnum + w*Dcat, yp,
+                                        eval_metric=eval_metric, metric="precomputed")
+                result[eval_metric].append({
+                    "params": {
+                        "alpha": w,
+                        "n_clusters": n_clusters
+                    },
+                    "score": score
+                })
     return result
     # mem = (Dnum.itemsize*Dnum.size + Dcat.itemsize*Dcat.size)*2
     # n_jobs = min(64, int(40e9/mem))
@@ -118,88 +123,96 @@ def eval_haverage(Dnum, Dcat, y, n_clusters):
     # return result
 
 
-def eval_kmedoids(Dnum, Dcat, y, n_clusters, method):
-    clusters = [kmedoids(Dnum, Dcat, w, n_clusters, method=method)
-                for w in w_values]
+def eval_kmedoids(Dnum, Dcat, y, method):
     result = {}
-    for eval_metric in EXTERNAL_EVAL_METRICS:
-        result[eval_metric] = []
-        for w, yp in zip(w_values, clusters):
-            score = - \
-                1 if yp is None else get_score(y, yp, eval_metric=eval_metric)
-            result[eval_metric].append({
-                "params": {
-                    "alpha": w,
-                    "n_clusters": n_clusters
-                },
-                "score": score
-            })
+    n_clusters_ground_truth = len(set(y))
+    for n_clusters in range(max(n_clusters_ground_truth-10, 2), n_clusters_ground_truth+11):
+        clusters = [kmedoids(Dnum, Dcat, w, n_clusters, method=method) for w in w_values]
+        if n_clusters == n_clusters_ground_truth:
+            for eval_metric in EXTERNAL_EVAL_METRICS:
+                if eval_metric not in result:
+                    result[eval_metric] = []
+                for w, yp in zip(w_values, clusters):
+                    score = -1 if yp is None else get_score(y, yp, eval_metric=eval_metric)
+                    result[eval_metric].append({
+                        "params": {
+                            "alpha": w,
+                            "n_clusters": n_clusters
+                        },
+                        "score": score
+                    })
 
-    for eval_metric in INTERNAL_EVAL_METRICS:
-        result[eval_metric] = []
-        for w, yp in zip(w_values, clusters):
-            score = -1 if yp is None else \
-                get_unsupervised_score((1-w)*Dnum + w*Dcat, yp,
-                                       eval_metric=eval_metric, metric="precomputed")
-            result[eval_metric].append({
-                "params": {
-                    "alpha": w,
-                    "n_clusters": n_clusters
-                },
-                "score": score
-            })
-    return result
-
-
-def eval_kprototypes(Xnum, Xcat, y, n_clusters, num_metric, cat_metric):
-    clusters = [kprototypes(Xnum, Xcat, n_clusters, num_metric,
-                            cat_metric, gamma) for gamma in gamma_values]
-    result = {}
-    for eval_metric in EXTERNAL_EVAL_METRICS:
-        result[eval_metric] = []
-        for gamma, yp in zip(gamma_values, clusters):
-            score = -1 if yp is None else \
-                get_score(y, yp, eval_metric=eval_metric)
-            result[eval_metric].append({
-                "params": {
-                    "gamma": gamma,
-                    "n_clusters": n_clusters
-                },
-                "score": score
-            })
-
-    Dnum = num_metric.pairwise(Xnum)
-    Dcat = None
-    if np.isnan(Dnum).any():
-        print("Warning: Distance matrix contain Nan values for metric:", num_metric)
-        Dnum = None
-    elif np.isinf(Dnum).any():
-        print("Warning: Distance matrix contain infinite values for metric:", num_metric)
-        Dnum = None
-    if Dnum is not None:
-        Dcat = cat_metric.pairwise(Xcat)
-        if np.isnan(Dcat).any():
-            print("Warning: Distance matrix contain Nan values for metric:", cat_metric)
-            Dcat = None
-        elif np.isinf(Dcat).any():
-            print("Warning: Distance matrix contain infinite values for metric:", cat_metric)
-            Dcat = None
-
-    if Dcat is not None:
         for eval_metric in INTERNAL_EVAL_METRICS:
-            result[eval_metric] = []
-            for gamma, yp in zip(gamma_values, clusters):
-                D = Dnum + gamma*Dcat
-                np.fill_diagonal(D, 0)
+            if eval_metric not in result:
+                result[eval_metric] = []
+            for w, yp in zip(w_values, clusters):
                 score = -1 if yp is None else \
-                    get_unsupervised_score(D, yp, eval_metric=eval_metric, metric="precomputed")
+                    get_unsupervised_score((1-w)*Dnum + w*Dcat, yp,
+                                        eval_metric=eval_metric, metric="precomputed")
                 result[eval_metric].append({
                     "params": {
-                        "gamma": gamma,
+                        "alpha": w,
                         "n_clusters": n_clusters
                     },
                     "score": score
                 })
+    return result
+
+
+def eval_kprototypes(Xnum, Xcat, y, num_metric, cat_metric):
+    result = {}
+    n_clusters_ground_truth = len(set(y))
+    for n_clusters in range(max(n_clusters_ground_truth-10, 2), n_clusters_ground_truth+11):
+        clusters = [kprototypes(Xnum, Xcat, n_clusters, num_metric,
+                                cat_metric, gamma) for gamma in gamma_values]
+        if n_clusters == n_clusters_ground_truth:
+            for eval_metric in EXTERNAL_EVAL_METRICS:
+                if eval_metric not in result:
+                    result[eval_metric] = []
+                for gamma, yp in zip(gamma_values, clusters):
+                    score = -1 if yp is None else \
+                        get_score(y, yp, eval_metric=eval_metric)
+                    result[eval_metric].append({
+                        "params": {
+                            "gamma": gamma,
+                            "n_clusters": n_clusters
+                        },
+                        "score": score
+                    })
+
+        Dnum = num_metric.pairwise(Xnum)
+        Dcat = None
+        if np.isnan(Dnum).any():
+            print("Warning: Distance matrix contain Nan values for metric:", num_metric)
+            Dnum = None
+        elif np.isinf(Dnum).any():
+            print("Warning: Distance matrix contain infinite values for metric:", num_metric)
+            Dnum = None
+        if Dnum is not None:
+            Dcat = cat_metric.pairwise(Xcat)
+            if np.isnan(Dcat).any():
+                print("Warning: Distance matrix contain Nan values for metric:", cat_metric)
+                Dcat = None
+            elif np.isinf(Dcat).any():
+                print("Warning: Distance matrix contain infinite values for metric:", cat_metric)
+                Dcat = None
+
+        if Dcat is not None:
+            for eval_metric in INTERNAL_EVAL_METRICS:
+                if eval_metric not in result:
+                    result[eval_metric] = []
+                for gamma, yp in zip(gamma_values, clusters):
+                    D = Dnum + gamma*Dcat
+                    np.fill_diagonal(D, 0)
+                    score = -1 if yp is None else \
+                        get_unsupervised_score(D, yp, eval_metric=eval_metric, metric="precomputed")
+                    result[eval_metric].append({
+                        "params": {
+                            "gamma": gamma,
+                            "n_clusters": n_clusters
+                        },
+                        "score": score
+                    })
     return result
 
     # mem = (Xnum.itemsize*Xnum.size + Xcat.itemsize*Xcat.size)*2
@@ -277,18 +290,18 @@ def eval_kprototypes(Xnum, Xcat, y, n_clusters, num_metric, cat_metric):
     # return result
 
 
-def eval_with_pairwise_dist(algorithm, Dnum, Dcat, y, n_clusters):
+def eval_with_pairwise_dist(algorithm, Dnum, Dcat, y):
     if algorithm == "haverage":
-        return eval_haverage(Dnum, Dcat, y, n_clusters)
+        return eval_haverage(Dnum, Dcat, y)
     if algorithm == "fasterpam":
-        return eval_kmedoids(Dnum, Dcat, y, n_clusters, "fasterpam")
+        return eval_kmedoids(Dnum, Dcat, y, "fasterpam")
     if algorithm == "sfkm":
-        return eval_kmedoids(Dnum, Dcat, y, n_clusters, "alternate")
+        return eval_kmedoids(Dnum, Dcat, y, "alternate")
 
 
-def eval_with_data(algorithm, Xnum, Xcat, y, n_clusters, num_metric, cat_metric):
+def eval_with_data(algorithm, Xnum, Xcat, y, num_metric, cat_metric):
     if algorithm == "kprototypes":
-        return eval_kprototypes(Xnum, Xcat, y, n_clusters, num_metric, cat_metric)
+        return eval_kprototypes(Xnum, Xcat, y, num_metric, cat_metric)
 
 
 def benchmark(data, outputdir, algorithm="haverage"):
@@ -370,12 +383,12 @@ def benchmark(data, outputdir, algorithm="haverage"):
                     if fitted_cat_metric is not None and f"{num_metric}_{cat_metric}" not in result:
                         # print(num_metric, cat_metric, end=", ")
                         result[f"{num_metric}_{cat_metric}"] = eval_with_data(
-                            algorithm, Xnum, Xcat, y, n_clusters, fitted_num_metric, fitted_cat_metric)
+                            algorithm, Xnum, Xcat, y, fitted_num_metric, fitted_cat_metric)
                 for bin_metric, fitted_bin_metric in all_fitted_bin_metric.items():
                     if fitted_bin_metric is not None and f"{num_metric}_{bin_metric}" not in result:
                         # print(num_metric, bin_metric, end=", ")
                         result[f"{num_metric}_{bin_metric}"] = eval_with_data(
-                            algorithm, Xnum, Xdummy, y, n_clusters, fitted_num_metric, fitted_bin_metric)
+                            algorithm, Xnum, Xdummy, y, fitted_num_metric, fitted_bin_metric)
     else:
         tempdir = tempfile.TemporaryDirectory(dir="/homedir/adiop/tmp/")
         for num_metric in base_metrics.get_available_metrics(data_type="numeric"):
@@ -394,7 +407,7 @@ def benchmark(data, outputdir, algorithm="haverage"):
                     if Dcat is not None:
                         # print(num_metric, cat_metric, end=", ")
                         result[f"{num_metric}_{cat_metric}"] = eval_with_pairwise_dist(
-                            algorithm, Dnum, Dcat, y, n_clusters
+                            algorithm, Dnum, Dcat, y
                         )
                 for bin_metric in base_metrics.get_available_metrics(data_type="binary"):
                     filename = os.path.join(tempdir.name, bin_metric)
@@ -408,7 +421,7 @@ def benchmark(data, outputdir, algorithm="haverage"):
                     if Dcat is not None:
                         # print(num_metric, bin_metric, end=", ")
                         result[f"{num_metric}_{bin_metric}"] = eval_with_pairwise_dist(
-                            algorithm, Dnum, Dcat, y, n_clusters
+                            algorithm, Dnum, Dcat, y
                         )
     end = time.time()
     # print(result, flush=True)

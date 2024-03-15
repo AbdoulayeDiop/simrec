@@ -25,9 +25,10 @@ args = parser.parse_args()
 OUTPUT_FILE = os.path.join(args.outputdir, "meta_features.csv")
 TIME_FILE = os.path.join(args.outputdir, "meta_features_times.json")
 
-meta_df = pd.DataFrame(columns=ALL_ATTRIBUTE_NAMES)
+meta_df = None
 if os.path.isfile(OUTPUT_FILE):
     meta_df = pd.read_csv(OUTPUT_FILE, index_col="id")
+    meta_df.index = meta_df.index.astype(str)
 times = {}
 if os.path.isfile(TIME_FILE):
     with open(TIME_FILE, "r", encoding="utf-8") as f:
@@ -37,7 +38,7 @@ filenames = []
 if args.datasetsdir is not None:
     filenames += [os.path.join(args.datasetsdir, filename)
                     for filename in os.listdir(args.datasetsdir)
-                    if filename.split('.')[0] not in meta_df.index.astype(str)]
+                    if filename.split('.')[0] not in (meta_df.index if meta_df is not None else [])]
 
 print(f"{len(filenames)}/{len(os.listdir(args.datasetsdir))} datasets to benchmark")
 
@@ -58,7 +59,7 @@ end = time.time()
 print(f"END. total time = {end - start}")
 
 print("SAVING...")
-ids = [data["id"] for data in datasets]
+ids = [str(data["id"]) for data in datasets]
 meta_X = []
 i = 0
 for meta_x, t in list_ret:
@@ -68,9 +69,10 @@ for meta_x, t in list_ret:
 
 meta_X = np.array(meta_X)
 
-meta_df = pd.concat([
+new_meta_df = pd.DataFrame(columns=ALL_ATTRIBUTE_NAMES, data=meta_X, index=ids)
+meta_df = new_meta_df if meta_df is None else pd.concat([
     meta_df,
-    pd.DataFrame(columns=ALL_ATTRIBUTE_NAMES, data=meta_X, index=ids)
+    new_meta_df
 ])
 meta_df.index.name = "id"
 print(meta_df.head())

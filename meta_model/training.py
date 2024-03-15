@@ -71,22 +71,22 @@ def grid_search_cv_predict_knn(X, Y, Yn, n_splits=5, scorer=scorer, verbose=0, n
     knn = ALL_MODELS["KNN"](**best_params)
     return cross_val_predict(knn, X, Y, cv=n_splits, n_jobs=-1), best_params
 
-# def grid_search_cv_predict_dtree(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
-#     parameters = {
-#         'min_samples_leaf': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
-#         'max_features': [None, "sqrt", "log2"],
-#     }
-#     dtree = DecisionTreeRegressor()
-#     gridcv = GridSearchCV(dtree, parameters,
-#                           scoring=scorer,
-#                           cv=n_splits,
-#                           verbose=verbose,
-#                           error_score='raise',
-#                           refit=False,
-#                           n_jobs=n_jobs
-#                           ).fit(X, Y)
-#     dtree = DecisionTreeRegressor(**gridcv.best_params_)
-#     return cross_val_predict(dtree, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
+def grid_search_cv_predict_dtree(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
+    parameters = {
+        'min_samples_leaf': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
+        'max_features': [None, "sqrt", "log2"],
+    }
+    dtree = DecisionTreeRegressor(random_state=0)
+    gridcv = GridSearchCV(dtree, parameters,
+                          scoring=scorer,
+                          cv=n_splits,
+                          verbose=verbose,
+                          error_score='raise',
+                          refit=False,
+                          n_jobs=n_jobs
+                          ).fit(X, Y)
+    dtree = DecisionTreeRegressor(**gridcv.best_params_, random_state=0)
+    return cross_val_predict(dtree, X, Y, cv=n_splits, n_jobs=-1), gridcv.best_params_
 
 # def grid_search_cv_predict_rf(X, Y, n_splits=5, scorer=scorer, verbose=0, n_jobs=-1):
 #     parameters = {
