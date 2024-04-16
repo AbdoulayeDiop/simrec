@@ -63,15 +63,15 @@ def load_meta_dataset(meta_features_file, scores_dir, algorithm, eval_metric):
     benchmark_results = benchmark_results.fillna(-1)
     indices = np.random.permutation(benchmark_results.shape[0])
     benchmark_results = benchmark_results.iloc[indices]
-    if eval_metric in ["ari", "purity"]:
-        benchmark_results_acc = pd.DataFrame.from_dict(benchmark_results_acc, orient='index')
-        benchmark_results_acc = benchmark_results_acc.fillna(-1)
-        benchmark_results_acc = benchmark_results_acc.iloc[indices]
-        max_ = benchmark_results_acc.max(axis=1)
-        benchmark_results = benchmark_results[max_ >= 0.7]
-    if eval_metric == "acc":
-        max_ = benchmark_results.max(axis=1)
-        benchmark_results = benchmark_results[max_ >= 0.7]
+    # if eval_metric in ["ari", "purity"]:
+    #     benchmark_results_acc = pd.DataFrame.from_dict(benchmark_results_acc, orient='index')
+    #     benchmark_results_acc = benchmark_results_acc.fillna(-1)
+    #     benchmark_results_acc = benchmark_results_acc.iloc[indices]
+    #     max_ = benchmark_results_acc.max(axis=1)
+    #     benchmark_results = benchmark_results[max_ >= 0.7]
+    # if eval_metric == "acc":
+    #     max_ = benchmark_results.max(axis=1)
+    #     benchmark_results = benchmark_results[max_ >= 0.7]
 
     index = benchmark_results.index
     mixed_meta_df = mixed_meta_df.loc[[i for i in index if i in mixed_meta_df.index]]
