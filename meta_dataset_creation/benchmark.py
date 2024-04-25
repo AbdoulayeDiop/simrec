@@ -24,9 +24,6 @@ from meta_dataset_creation.utils import (EXTERNAL_EVAL_METRICS, INTERNAL_EVAL_ME
 from metrics import base_metrics
 from clustering_algorithms import haverage, kmedoids, kprototypes
 
-# from hedclus.hedclus.cluster import KPrototypes
-# from kmodes.kprototypes import KPrototypes as KP
-
 gamma_values = np.concatenate((np.linspace(0, 0.1, 10), np.linspace(
     0.1, 1, 10), np.arange(2, 10), np.arange(10, 101, 10)))
 w_values = np.linspace(0, 1, 51)
