@@ -165,4 +165,5 @@ venv/
 log/
 *.out
 # *.pickle
-datasets
+datasets/
+tmp/
