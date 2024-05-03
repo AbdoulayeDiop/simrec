@@ -4,6 +4,8 @@ from collections.abc import Iterable
 import numpy as np
 from scipy.stats import entropy
 from sklearn.metrics import mutual_info_score, pairwise_distances
+from joblib import Parallel, delayed
+from itertools import product
 
 
 def n_instances(X):
@@ -48,15 +50,23 @@ def std_squared_num_att(X):
 # statistics on products of attributes values pairs ##############
 
 
-def means_internal_product_num_att(X):
-    l = [np.mean([X[i1, j]*X[i2, j] for i1 in range(X.shape[0]-1)
-                 for i2 in range(i1+1, X.shape[0])]) for j in range(X.shape[1])]
+def means_internal_product_num_att(X, n_jobs=-1):
+    # l = [np.mean([x * y for x, y in product((X[:, j]), X[:, j])]) for j in range(X.shape[1])]
+    indices = np.triu_indices(X.shape[0])
+    if X.shape[0] < 1000:
+        l = [np.mean(X[indices[0], j] * X[indices[1], j]) for j in range(X.shape[1])]
+    else:
+        l = Parallel(n_jobs=n_jobs)(delayed(lambda x: np.mean(X[indices[0], x] * X[indices[1], x]))(j) for j in range(X.shape[1]))
     return [np.min(l), np.quantile(l, 0.25), np.mean(l), np.quantile(l, 0.75), np.max(l)]
 
 
-def std_internal_product_num_att(X):
-    l = [np.std([X[i1, j]*X[i2, j] for i1 in range(X.shape[0]-1)
-                for i2 in range(i1+1, X.shape[0])]) for j in range(X.shape[1])]
+def std_internal_product_num_att(X, n_jobs=-1):
+    # l = [np.std([x * y for x, y in product((X[:, j]), X[:, j])]) for j in range(X.shape[1])]
+    indices = np.triu_indices(X.shape[0], 1)
+    if X.shape[0] < 1000:
+        l = [np.std(X[indices[0], j] * X[indices[1], j]) for j in range(X.shape[1])]
+    else:
+        l = Parallel(n_jobs=n_jobs)(delayed(lambda x: np.std(X[indices[0], x] * X[indices[1], x]))(j) for j in range(X.shape[1]))
     return [np.min(l), np.quantile(l, 0.25), np.mean(l), np.quantile(l, 0.75), np.max(l)]
 
 # covariance #####################################################
@@ -83,9 +93,14 @@ def entropy_cat_att(X):
     return [np.min(l), np.quantile(l, 0.25), np.mean(l), np.quantile(l, 0.75), np.max(l)]
 
 
-def mutual_info_cat_att(X):
-    mi = pairwise_distances(X.T, metric=mutual_info_score)
-    l = mi[np.triu_indices(mi.shape[0])]
+def mutual_info_cat_att(X, n_jobs=16):
+    indices = np.triu_indices(X.shape[1])
+    if X.shape[1] < 50:
+        l = [mutual_info_score(X[:, j1], X[:, j2]) for j1, j2 in zip(*indices)]
+    else:
+        l = Parallel(n_jobs=n_jobs)(delayed(lambda j1, j2: mutual_info_score(X[:, j1], X[:, j2]))(j1, j2) for j1, j2 in zip(*indices))
+    # l = Parallel(n_jobs=n_jobs)(delayed(lambda j1, j2: mutual_info_score(X[:, j1], X[:, j2]))(j1, j2) for j1, j2 in zip(*indices))
+    # l = [mutual_info_score(X[:, j1], X[:, j2]) for j1, j2 in zip(*indices)]
     return [np.min(l), np.quantile(l, 0.25), np.mean(l), np.quantile(l, 0.75), np.max(l)]
 
 # std of the frequency of categories of a given attributes #######
@@ -180,24 +195,33 @@ def compute_meta_features(Xnum, Xcat, return_time=False, selected=None):
     if return_time:
         start = time.time()
     for name, meta_feature in get_general_meta_features().items():
+        # t1 = time.time()
         if name in ["num_on_cat"]:
             v = meta_feature(Xnum=Xnum, Xcat=Xcat)
         else:
             v = meta_feature(X)
+        # t2 = time.time()
+        # print(name, t2 - t1)
         if isinstance(v, Iterable):
             meta_x += list(v)
         else:
             meta_x.append(v)
 
     for name, meta_feature in get_num_meta_features().items():
+        # t1 = time.time()
         v = meta_feature(Xnum)
+        # t2 = time.time()
+        # print(name, t2 - t1)
         if isinstance(v, Iterable):
             meta_x += list(v)
         else:
             meta_x.append(v)
 
     for name, meta_feature in get_cat_meta_features().items():
+        # t1 = time.time()
         v = meta_feature(Xcat)
+        # t2 = time.time()
+        # print(name, t2 - t1)
         if isinstance(v, Iterable):
             meta_x += list(v)
         else:
@@ -214,8 +238,10 @@ def compute_meta_features(Xnum, Xcat, return_time=False, selected=None):
 if __name__ == "__main__":
     from sklearn.datasets import make_blobs
     from sklearn.preprocessing import minmax_scale
-    X, y = make_blobs(n_samples=500, centers=5, n_features=8)
-    X = minmax_scale(X)
-    x = compute_meta_features(Xnum=X, Xcat=y.reshape(-1, 1))
-    print(len(x))
+    n_samples = 3000
+    Xnum, _ = make_blobs(n_samples=n_samples, centers=5, n_features=200)
+    Xcat = np.random.randint(2, size=(n_samples, 1000))
+    Xnum = minmax_scale(Xnum)
+    x, t = compute_meta_features(Xnum=Xnum, Xcat=Xcat, return_time=True)
+    print("time (s):", t)
     print(x)

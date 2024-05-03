@@ -54,27 +54,36 @@ else:
             data = pickle.load(f)
         datasets.append(data)
 
+
+    ids = [str(data["id"]) for data in datasets]
+    meta_X = []
     print("Computing meta-features...")
-    start = time.time()
-    list_ret = Parallel(n_jobs=int(args.jobs), verbose=60)(
-        delayed(compute_meta_features)(
-            minmax_scale(data["Xnum"]), data["Xcat"], return_time=True
-        ) for data in datasets
-    )
+    start = time.time()    
+    for i, data in enumerate(datasets):
+        print(f"{data['id']}: Xnum {data['Xnum'].shape}, Xcat {data['Xcat'].shape}...", end="")
+        meta_x, t = compute_meta_features(minmax_scale(data["Xnum"]), data["Xcat"], return_time=True)
+        meta_X.append(meta_x)
+        times[ids[i]] = t
+        print(t)
     end = time.time()
     print(f"END. total time = {end - start}")
 
-    print("SAVING...")
-    ids = [str(data["id"]) for data in datasets]
-    meta_X = []
-    i = 0
-    for meta_x, t in list_ret:
-        meta_X.append(meta_x)
-        times[ids[i]] = t
-        i += 1
-
+    # start = time.time()
+    # list_ret = Parallel(n_jobs=int(args.jobs), verbose=60)(
+    #     delayed(compute_meta_features)(
+    #         minmax_scale(data["Xnum"]), data["Xcat"], return_time=True
+    #     ) for data in datasets
+    # )
+    # end = time.time()
+    # print(f"END. total time = {end - start}")
+    # i = 0
+    # for meta_x, t in list_ret:
+    #     meta_X.append(meta_x)
+    #     times[ids[i]] = t
+    #     i += 1
     meta_X = np.array(meta_X)
 
+    print("SAVING...")
     new_meta_df = pd.DataFrame(columns=ALL_ATTRIBUTE_NAMES, data=meta_X, index=ids)
     meta_df = new_meta_df if meta_df is None else pd.concat([
         meta_df,
