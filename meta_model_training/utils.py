@@ -4,6 +4,7 @@ import pandas as pd
 import pickle
 # import openml
 from sklearn.metrics import make_scorer
+from sklearn.ensemble import IsolationForest
 
 def _ndcg(y1, y2, p=None):
     y1 = np.array(y1)
@@ -38,6 +39,8 @@ def load_meta_dataset(meta_features_file, scores_dir, algorithm, eval_metric):
     mixed_meta_df = pd.read_csv(meta_features_file, index_col="id").drop_duplicates()
     # openml_df = openml.datasets.list_datasets(output_format="dataframe")
     # mixed_meta_df = mixed_meta_df.loc[[ind for ind in mixed_meta_df.index if openml_df.loc[ind, "version"]==1]]
+    # indices = IsolationForest(random_state=0).fit_predict(mixed_meta_df.to_numpy())>0
+    # mixed_meta_df = mixed_meta_df.iloc[indices]
     mixed_meta_df.index = mixed_meta_df.index.astype(str)
     # print("Number of meta features:", mixed_meta_df.shape[1])
     # print("Number of instances:", mixed_meta_df.shape[0])
@@ -64,15 +67,15 @@ def load_meta_dataset(meta_features_file, scores_dir, algorithm, eval_metric):
     benchmark_results = benchmark_results.fillna(-1)
     indices = np.random.permutation(benchmark_results.shape[0])
     benchmark_results = benchmark_results.iloc[indices]
-    if eval_metric in ["ari", "purity"]:
-        benchmark_results_acc = pd.DataFrame.from_dict(benchmark_results_acc, orient='index')
-        benchmark_results_acc = benchmark_results_acc.fillna(-1)
-        benchmark_results_acc = benchmark_results_acc.iloc[indices]
-        max_ = benchmark_results_acc.max(axis=1)
-        benchmark_results = benchmark_results[max_ >= 0.7]
-    if eval_metric == "acc":
-        max_ = benchmark_results.max(axis=1)
-        benchmark_results = benchmark_results[max_ >= 0.7]
+    # if eval_metric in ["ari", "purity"]:
+    #     benchmark_results_acc = pd.DataFrame.from_dict(benchmark_results_acc, orient='index')
+    #     benchmark_results_acc = benchmark_results_acc.fillna(-1)
+    #     benchmark_results_acc = benchmark_results_acc.iloc[indices]
+    #     max_ = benchmark_results_acc.max(axis=1)
+    #     benchmark_results = benchmark_results[max_ >= 0.7]
+    # if eval_metric == "acc":
+    #     max_ = benchmark_results.max(axis=1)
+    #     benchmark_results = benchmark_results[max_ >= 0.7]
 
     index = benchmark_results.index
     mixed_meta_df = mixed_meta_df.loc[[i for i in index if i in mixed_meta_df.index]]

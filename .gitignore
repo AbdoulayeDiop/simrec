@@ -167,3 +167,5 @@ log/
 # *.pickle
 datasets/
 tmp/
+experiments/
+datasets_test/

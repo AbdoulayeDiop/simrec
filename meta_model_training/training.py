@@ -43,7 +43,7 @@ def grid_search_cv_predict_knn(X, Y, Yn, n_splits=5, verbose=0, n_jobs=-1):
     def evaluate(n_neighbors, metric, w):
         knn = KNN(n_neighbors=n_neighbors, metric=metric, weights=w)
         Y_pred = cross_val_predict(knn, X, Y, cv=n_splits)
-        fitness = top1_func(Yn, Y_pred)
+        fitness = top1_func(Y, Y_pred)
         return fitness
     list_params = [(n_neighbors, metric, w) for n_neighbors in parameters["n_neighbors"] for metric in parameters["metric"] for w in parameters["weights"]]
     list_ret = Parallel(n_jobs=n_jobs)(delayed(evaluate)(*t) for t in list_params)
@@ -52,7 +52,7 @@ def grid_search_cv_predict_knn(X, Y, Yn, n_splits=5, verbose=0, n_jobs=-1):
     return cross_val_predict(knn, X, Y, cv=n_splits, n_jobs=-1), best_params
 
 for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'haverage'
-    for eval_metric in [ "sil", "ari", "acc"]:
+    for eval_metric in ["acc", "sil", "ari"]:
         print(algorithm, eval_metric,
             "##################################################")
         obj = {}

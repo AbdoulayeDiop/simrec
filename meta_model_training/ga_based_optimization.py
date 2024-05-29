@@ -33,8 +33,8 @@ def mfs_plus_hpo_knn(X, Y, Yn, n_neighbors_values=None, metrics=None, weights=No
                                 metric=metric, weights=w)
         Y_pred = cross_val_predict(
             knn, X[:, selected_feats], Y, cv=n_splits, n_jobs=-1)
-        fitness = scorer_func(Yn, Y_pred)
-        return fitness #- 3e-4*sum(selected_feats)
+        fitness = scorer_func(Y, Y_pred)
+        return fitness #- 1e-3*sum(selected_feats)
 
     fitness_function = fitness_func
     num_parents_mating = pop_size//2
