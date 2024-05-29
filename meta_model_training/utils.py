@@ -24,7 +24,7 @@ def ndcg(y_true, y_pred, p=None):
     y_pred = np.array(y_pred)
     if len(y_true.shape) <= 1:
         return _ndcg(y_true, y_pred, p)
-    return np.array([_ndcg(y, y_pred[i]) for i, y in enumerate(y_true)])
+    return np.array([_ndcg(y, y_pred[i], p) for i, y in enumerate(y_true)])
 
 def ndcg_sim(y1, y2, p=None):
     return _ndcg(y1, y2, p) * _ndcg(y2, y1, p) #pylint: disable=arguments-out-of-order
