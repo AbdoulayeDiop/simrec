@@ -34,13 +34,9 @@ print(recommendation)
 Here is the output:
 
 ``` python
-<<<<<<< HEAD
-['mahalanobis_of', 'mahalanobis_russellrao', 'mahalanobis_hamming', 'mahalanobis_kulsinski', 'divergence_of']
-=======
 [('lorentzian_of', 0.7497378130452476),
  ('euclidean_eskin', 0.7496881002259083),
  ('sqeuclidean_sokalsneath', 0.7491985225953831),
  ('manhattan_eskin', 0.7486684895711725),
  ('manhattan_of', 0.748400729930295)]
->>>>>>> upstream/main
 ```
