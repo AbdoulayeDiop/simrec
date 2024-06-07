@@ -1,14 +1,13 @@
-filelock==3.12.2
+filelock
+joblib
+kmedoids
+kmodes
+matplotlib
+numpy
+openml
+pandas
+pytorchltr
+scikit_learn
+scipy
+tqdm
 ipykernel
-joblib==1.2.0
-kmedoids==0.4.3
-kmodes==0.12.2
-matplotlib==3.5.3
-numpy==1.23.3
-openml==0.12.2
-pandas==1.4.4
-pytorchltr==0.2.1
-scikit_learn==1.2.2
-scipy==1.9.1
-# torch==1.12.1+cu116
-tqdm==4.65.0
