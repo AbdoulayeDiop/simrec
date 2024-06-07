@@ -1,4 +1,5 @@
 filelock==3.12.2
+ipykernel
 joblib==1.2.0
 kmedoids==0.4.3
 kmodes==0.12.2

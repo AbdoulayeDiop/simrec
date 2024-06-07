@@ -82,16 +82,16 @@ class WeightedAverage(MixedMetric):
         numeric = [i for i in range(X.shape[1]) if i not in categorical]
         return (1-self.w)*self.num_metric.pairwise(X[:, numeric], Y if Y is None else Y[:, numeric]) + \
             self.w*self.cat_metric.pairwise(X[:, categorical], Y if Y is None else Y[:, categorical])
-    
+
     def is_valid_data(self, x, categorical=None):
         x = np.array(x)
         if len(x.shape) == 1:
             numeric = [i for i in range(len(x)) if i not in categorical]
-            return self.num_metric.is_valid_data(x[numeric]) and self.num_metric.is_valid_data(x[categorical])
+            return self.num_metric.is_valid_data(x[numeric]) and self.cat_metric.is_valid_data(x[categorical])
         else:
             numeric = [i for i in range(x.shape[1]) if i not in categorical]
-            return self.num_metric.is_valid_data(x[:, numeric]) and self.num_metric.is_valid_data(x[:, categorical])
-        
+            return self.num_metric.is_valid_data(x[:, numeric]) and self.cat_metric.is_valid_data(x[:, categorical])
+
 if __name__ == "__main__":
     Xnum = np.random.rand(200, 10)
     Xcat = np.random.randint(8, size=(200, 5))
