@@ -6,10 +6,11 @@ import sys
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold, cross_val_predict
 from ga_based_optimization import mfs_plus_hpo_knn
-from utils import load_meta_dataset, top1_func
+from utils import load_meta_dataset, top_r, lower_bound
 from joblib import Parallel, delayed
 sys.path.append("..")
 from meta_model import KNN, create_pipeline
+import time
 
 proposed_attributes_statistics = [
     f"{p}_{name}" for p in ["min", "q1", "mean", "q3", "max"] for name in [
@@ -32,9 +33,10 @@ BENCHMARK_RESULTS_DIR = args.benchmarkdir
 META_FEATURES_FILE = args.metafeaturesfile
 OUTPUT_DIR = args.outputdir
 N_SPLITS = 10
+ALPHA = 4
 
 
-def grid_search_cv_predict_knn(X, Y, Yn, n_splits=5, verbose=0, n_jobs=-1):
+def grid_search_cv_predict_knn(X, Y, cvi, n_splits=5, verbose=0, n_jobs=-1):
     parameters = {
         'n_neighbors': [v for v in range(1, 32, 2) if v <= X.shape[0]/2],
         'metric': ["euclidean", "manhattan", "cosine"],
@@ -43,7 +45,7 @@ def grid_search_cv_predict_knn(X, Y, Yn, n_splits=5, verbose=0, n_jobs=-1):
     def evaluate(n_neighbors, metric, w):
         knn = KNN(n_neighbors=n_neighbors, metric=metric, weights=w)
         Y_pred = cross_val_predict(knn, X, Y, cv=n_splits)
-        fitness = top1_func(Y, Y_pred)
+        fitness = top_r(Y, Y_pred, cvi)
         return fitness
     list_params = [(n_neighbors, metric, w) for n_neighbors in parameters["n_neighbors"] for metric in parameters["metric"] for w in parameters["weights"]]
     list_ret = Parallel(n_jobs=n_jobs)(delayed(evaluate)(*t) for t in list_params)
@@ -51,45 +53,41 @@ def grid_search_cv_predict_knn(X, Y, Yn, n_splits=5, verbose=0, n_jobs=-1):
     knn = KNN(**best_params)
     return cross_val_predict(knn, X, Y, cv=n_splits, n_jobs=-1), best_params
 
+meta_features_df, benchmark_results = load_meta_dataset(META_FEATURES_FILE, BENCHMARK_RESULTS_DIR)
+
 for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'haverage'
-    for eval_metric in ["acc", "sil", "ari"]:
-        print(algorithm, eval_metric,
+    for cvi in ["acc", "sil", "ari"]:
+        print(algorithm, cvi,
             "##################################################")
         obj = {}
-        filename = os.path.join(OUTPUT_DIR, f"training_results/{algorithm}_{eval_metric}.pickle")
+        filename = os.path.join(OUTPUT_DIR, f"training_results/{algorithm}_{cvi}.pickle")
         if os.path.isfile(filename):
             with open(filename, "rb") as f:
                 obj = pickle.load(f)
-        if "meta_dataset" not in obj:
-            scores_dir = os.path.join(
-                BENCHMARK_RESULTS_DIR, algorithm, "scores")
-            obj["meta_dataset"] = load_meta_dataset(
-                META_FEATURES_FILE, scores_dir, algorithm, eval_metric)
-            with open(filename, "wb") as f:
-                pickle.dump(obj, f)
+        
+        if "X" not in obj:
+            Y = benchmark_results[algorithm][cvi].to_numpy()
+            lower_bound_cvi = lower_bound(cvi)
+            Yn = np.array([(y-lower_bound_cvi)/max(y-lower_bound_cvi) for y in Y])
+            Yn[Yn > 0] **= ALPHA
+            Yn[Yn <= 0] = -1
 
-        mixed_meta_df, benchmark_results = obj["meta_dataset"]
-        Y = benchmark_results.to_numpy()
-        if eval_metric in ["acc", "purity"]:
-            Yn = np.array([y/max(y) for y in Y])
-            Yn[Yn > 0] **= 4
-            Yn[Yn <= 0] = -1
-        elif eval_metric == "ari":
-            Yn = np.array([(y+0.5)/max(y+0.5) for y in Y])
-            Yn[Yn > 0] **= 4
-            Yn[Yn <= 0] = -1
+            X_ = meta_features_df.loc[benchmark_results[algorithm][cvi].index].to_numpy()
+            sc = StandardScaler().fit(X_)
+            X = sc.transform(X_)
+            X2 = X[:, [i for i in range(X.shape[1]) if meta_features_df.columns.values[i]
+                    not in proposed_attributes_statistics]]
+            obj["X_"] = X_
+            obj["X"] = X
+            obj["Y"] = Y
+            obj["X2"] = X2
+            obj["Yn"] = Yn
+            obj["meta_feature_names"] = meta_features_df.columns.to_numpy()
+            obj["similarity_pairs"] = benchmark_results[algorithm][cvi].columns.to_numpy()
         else:
-            Yn = np.array([(y+1)/max(y+1) for y in Y])
-            Yn[Yn > 0] **= 4
-            Yn[Yn <= 0] = -1
+            X_, X, Y, X2, Yn = obj["X_"], obj["X"], obj["Y"], obj["X2"], obj["Yn"]
 
-        X_ = mixed_meta_df.to_numpy()
-        sc = StandardScaler().fit(X_)
-        X = sc.transform(X_)
-        X2 = X[:, [i for i in range(X.shape[1]) if mixed_meta_df.columns.values[i]
-                not in proposed_attributes_statistics]]
-
-        print(f"X: {X.shape}, X2: {X2.shape}, Y: {Y.shape}")
+        print(f"Shapes -> X: {obj['X'].shape}, X2: {obj['X2'].shape}, Y: {obj['Y'].shape}")
 
         if "train_results" not in obj:
             obj["train_results"] = {}
@@ -105,7 +103,7 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'have
                     [[np.mean(yj) for yj in Y[train].T] for _ in test])
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
-            print(f"mean {eval_metric}:",  score)
+            print(f"mean {cvi}:",  score)
             print()
 
         with open(filename, "wb") as f:
@@ -117,11 +115,11 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'have
             print(model_name)
             obj["train_results"][model_name] = {}
             obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = \
-                grid_search_cv_predict_knn(X2, Y, Yn, n_splits=N_SPLITS)
+                grid_search_cv_predict_knn(X2, Y, cvi, n_splits=N_SPLITS)
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
             print("params:", obj["train_results"][model_name]["params"])
-            print(f"mean {eval_metric}:",  score)
+            print(f"mean {cvi}:",  score)
             print()
 
         with open(filename, "wb") as f:
@@ -133,11 +131,11 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'have
             print(model_name)
             obj["train_results"][model_name] = {}
             obj["train_results"][model_name]["pred"], obj["train_results"][model_name]["params"] = grid_search_cv_predict_knn(
-                X, Y, Yn, n_splits=N_SPLITS)
+                X, Y, cvi, n_splits=N_SPLITS)
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
             print("params:", obj["train_results"][model_name]["params"])
-            print(f"mean {eval_metric}:",  score)
+            print(f"mean {cvi}:",  score)
             print()
 
         with open(filename, "wb") as f:
@@ -149,7 +147,7 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'have
             print(model_name)
             obj["train_results"][model_name] = {}
             lmf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X2, Y, Yn, num_generations=600, pop_size=8)
+                X2, Y, lambda yt, yp: top_r(yt, yp, cvi), num_generations=600, pop_size=8)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 lmf_fs_knn, X2[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = lmf_fs_knn.get_params()
@@ -157,7 +155,7 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'have
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
             print("params:", obj["train_results"][model_name]["params"])
-            print(f"mean {eval_metric}:",  score)
+            print(f"mean {cvi}:",  score)
             print()
 
         with open(filename, "wb") as f:
@@ -165,31 +163,37 @@ for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'have
 
         ###############################################################
         model_name = "AMF-FS-KNN"
+        
+        t0 = time.time()
         if model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X, Y, Yn, num_generations=600, pop_size=8)
+                X, Y, lambda yt, yp: top_r(yt, yp, cvi), num_generations=600, pop_size=8)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 amf_fs_knn, X[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = amf_fs_knn.get_params()
             obj["train_results"][model_name]["selected_features"] = selected_feats
+            obj["train_results"][model_name]["selected_features_names"] = obj["meta_feature_names"][selected_feats]
             score = np.mean([y[y > -1][np.argmax(obj["train_results"]
                             [model_name]["pred"][i][y > -1])] for i, y in enumerate(Y)])
             print("params:", obj["train_results"][model_name]["params"])
-            print(f"mean {eval_metric}:",  score)            
+            print(f"mean {cvi}:",  score)
 
         with open(filename, "wb") as f:
             pickle.dump(obj, f)
-        
-        
+
+        print("Final training and saving...")
         pipeline = create_pipeline(
             scaler=StandardScaler(),
             selected_features=obj["train_results"]["AMF-FS-KNN"]["selected_features"],
             meta_model=KNN(**obj["train_results"]["AMF-FS-KNN"]["params"])
         )
         pipeline = pipeline.fit(X_, Y)
-        pipeline.similarity_pairs = benchmark_results.columns.to_numpy()
-        model_filename = os.path.join(OUTPUT_DIR, f"saved_models/meta_model_pipeline_{algorithm}_{eval_metric}.pickle")
+        tf = time.time()
+        pipeline.similarity_pairs = obj["similarity_pairs"]
+        model_filename = os.path.join(OUTPUT_DIR, f"saved_models/meta_model_pipeline_{algorithm}_{cvi}.pickle")
         with open(model_filename, "wb") as f:
             pickle.dump(pipeline, f)
+        print("DONE")
+        print("training time", tf - t0)

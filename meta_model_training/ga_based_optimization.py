@@ -1,15 +1,15 @@
 import numpy as np
 import pygad
 from sklearn.model_selection import cross_val_predict, KFold
-from utils import top1_func
+from utils import top_r
 import sys
 sys.path.append("..")
 from meta_model import KNN
 
-def mfs_plus_hpo_knn(X, Y, Yn, n_neighbors_values=None, metrics=None, weights=None, num_generations=100,
+def mfs_plus_hpo_knn(X, Y, scorer_func, n_neighbors_values=None, metrics=None, weights=None, num_generations=100,
                  pop_size=8, parent_selection_type="sss", crossover_probability=0.95,
                  mutation_probability=0.05, crossover_type="uniform", mutation_type="random",
-                 n_splits=10, scorer_func=top1_func):
+                 n_splits=10):
     if n_neighbors_values is None:
         n_neighbors_values = np.arange(1, 32, 2)
     if metrics is None:

@@ -34,62 +34,102 @@ def custom_sim(y1, y2, threshold=0.95):
     set2 = set([j for j, yj in enumerate(y2) if yj/max(y2) > threshold])
     return len(set1.intersection(set2)) / len(set1.union(set2)) #pylint: disable=arguments-out-of-order
 
-def load_meta_dataset(meta_features_file, scores_dir, algorithm, eval_metric):
+def load_meta_dataset(meta_features_file, benchmark_results_dir, verbose=1):
     np.random.seed(0)
-    mixed_meta_df = pd.read_csv(meta_features_file, index_col="id").drop_duplicates()
+    if verbose > 0:
+        print("Loading the meta-dataset")
+        print("1. Loading the meta-features...", end="")
+    meta_features_df = pd.read_csv(meta_features_file, index_col="id").drop_duplicates()
     # openml_df = openml.datasets.list_datasets(output_format="dataframe")
     # mixed_meta_df = mixed_meta_df.loc[[ind for ind in mixed_meta_df.index if openml_df.loc[ind, "version"]==1]]
     # indices = IsolationForest(random_state=0).fit_predict(mixed_meta_df.to_numpy())>0
     # mixed_meta_df = mixed_meta_df.iloc[indices]
-    mixed_meta_df.index = mixed_meta_df.index.astype(str)
+    meta_features_df.index = meta_features_df.index.astype(str)
     # print("Number of meta features:", mixed_meta_df.shape[1])
     # print("Number of instances:", mixed_meta_df.shape[0])
+    if verbose > 0: print("DONE")
 
+    if verbose > 0: print("2. Loading the clustering benchmark results...", end="")
     benchmark_results = {}
-    if eval_metric in ["ari", "purity"]:
-        benchmark_results_acc = {}
-    for filename in os.listdir(scores_dir):
-        data_id = filename.split('.')[0]
-        benchmark_results[data_id] = {}
-        if eval_metric in ["ari", "purity"]:
-            benchmark_results_acc[data_id] = {}
-        with open(os.path.join(scores_dir, filename), "rb") as f:
-            result = pickle.load(f)
-        for sim_pair in result:
-            if eval_metric in result[sim_pair]:
-                benchmark_results[data_id][sim_pair] = \
-                    max([v["score"] for v in result[sim_pair][eval_metric] \
-                        if eval_metric != "sil" or 0.05 <= v["params"]["gamma" if algorithm=="kprototypes" else "alpha"] <= (20 if algorithm=="kprototypes" else 0.95)])
-            if eval_metric in ["ari", "purity"] and "acc" in result[sim_pair]:
-                benchmark_results_acc[data_id][sim_pair] =max([v["score"] for v in result[sim_pair]["acc"]])
-        
-    benchmark_results = pd.DataFrame.from_dict(benchmark_results, orient='index')
-    benchmark_results = benchmark_results.fillna(-1)
-    indices = np.random.permutation(benchmark_results.shape[0])
-    benchmark_results = benchmark_results.iloc[indices]
-    # if eval_metric in ["ari", "purity"]:
-    #     benchmark_results_acc = pd.DataFrame.from_dict(benchmark_results_acc, orient='index')
-    #     benchmark_results_acc = benchmark_results_acc.fillna(-1)
-    #     benchmark_results_acc = benchmark_results_acc.iloc[indices]
-    #     max_ = benchmark_results_acc.max(axis=1)
-    #     benchmark_results = benchmark_results[max_ >= 0.7]
-    # if eval_metric == "acc":
-    #     max_ = benchmark_results.max(axis=1)
-    #     benchmark_results = benchmark_results[max_ >= 0.7]
+    common_dids = None
+    clustering_algorithms = os.listdir(benchmark_results_dir)
+    for algorithm in clustering_algorithms:
+        benchmark_results[algorithm] = {}
+        folder_path = os.path.join(benchmark_results_dir, algorithm)
+        scores_dir = os.path.join(folder_path, "scores/")
+        for filename in os.listdir(scores_dir):
+            data_id = filename.split('.')[0]
+            with open(os.path.join(scores_dir, filename), "rb") as f:
+                result = pickle.load(f)
+            for sim_pair in result:
+                for cvi in result[sim_pair]:
+                    if cvi not in benchmark_results[algorithm]:
+                        benchmark_results[algorithm][cvi] = {}
+                    if data_id not in benchmark_results[algorithm][cvi]:
+                        benchmark_results[algorithm][cvi][data_id] = {}
+                    benchmark_results[algorithm][cvi][data_id][sim_pair] = max([v["score"] for v in result[sim_pair][cvi] \
+                            if cvi != "sil" or 0.05 <= v["params"]["gamma" if algorithm=="kprototypes" else "alpha"] <= (20 if algorithm=="kprototypes" else 0.95)])
+                    # if cvi == "sil":
+                    #     print(sim_pair, sorted(result[sim_pair][cvi], reverse=True, key= lambda v: v["score"])[0])
+            
+        for cvi in benchmark_results[algorithm]:
+            benchmark_results[algorithm][cvi] = \
+                pd.DataFrame.from_dict(benchmark_results[algorithm][cvi], orient='index')
+            benchmark_results[algorithm][cvi] = \
+                benchmark_results[algorithm][cvi].fillna(-1)
+            
+        if len(benchmark_results[algorithm]) > 0:
+            if common_dids is None:
+                common_dids = set(benchmark_results[algorithm]["acc"].index.to_list())
+            else:
+                common_dids = common_dids.intersection(set(benchmark_results[algorithm]["acc"].index.to_list()))
 
-    index = benchmark_results.index
-    mixed_meta_df = mixed_meta_df.loc[[i for i in index if i in mixed_meta_df.index]]
-    benchmark_results = benchmark_results[index.isin(mixed_meta_df.index)]
-    return mixed_meta_df, benchmark_results
+    common_dids = np.random.permutation(list(common_dids))
+    common_dids = np.array([did for did in common_dids if did in meta_features_df.index])
+    meta_features_df = meta_features_df.loc[common_dids]
+    for algorithm in benchmark_results:
+        for cvi in benchmark_results[algorithm]:
+            benchmark_results[algorithm][cvi] = benchmark_results[algorithm][cvi].loc[common_dids]
+    if verbose > 0: print("DONE")
 
-top1_scorer = make_scorer(lambda yt, yp: np.mean([y[y>-1][np.argmax(yp[i][y>-1])]/max(y) for i, y in enumerate(yt)]))
-top1_func = lambda yt, yp: np.mean([y[y>-1][np.argmax(yp[i][y>-1])]/max(y) for i, y in enumerate(yt)])
+    if verbose > 0: print("3. Filtering for external CVIs...", end="")
+    df = pd.concat(
+        [benchmark_results["kprototypes"]["acc"].max(axis=1) >= 0.75, 
+        benchmark_results["fasterpam"]["acc"].max(axis=1) >= 0.75,
+        benchmark_results["haverage"]["acc"].max(axis=1) >= 0.75],
+        axis=1
+    )
+    filtered = df.any(axis=1)
+    for algorithm in benchmark_results:
+        for cvi in ["acc", "ari", "purity"]:
+            benchmark_results[algorithm][cvi] = benchmark_results[algorithm][cvi][filtered]
+    if verbose > 0: 
+        print("DONE")
+        print("# of datasets:", meta_features_df.shape[0])
+        print("# of datasets for external CVIs:", benchmark_results["kprototypes"]["acc"].shape[0])
+        print("# of meta-features:", meta_features_df.shape[1])
+        print("# of pairs of similarity measures:", benchmark_results["kprototypes"]["acc"].shape[1])
+
+    return meta_features_df, benchmark_results
+
+def lower_bound(cvi):
+    if cvi.lower() == "sil": return -1
+    elif cvi.lower() == "ari": return -0.5
+    elif cvi.lower() == "acc": return 0
+    else:
+        raise(Exception(f"Not nown CVI {cvi}, avilable CVIs are 'sil', 'ari', and 'acc'"))
+
+def top_r(yt, yp, cvi, r=1):
+    lower_bound_cvi = lower_bound(cvi)
+    def _top_r(yt_i, yp_i):
+        top_r_similarity_pairs = np.argsort(-yp_i[yt_i > -1])[:r]
+        score = max(yt_i[yt_i > -1][top_r_similarity_pairs])
+        return (score - lower_bound_cvi) / (max(yt_i) - lower_bound_cvi)
+    return np.mean([_top_r(yt_i, yp[i]) for i, yt_i in enumerate(yt)])
 
 if __name__=="__main__":
     BENCHMARK_RESULTS_DIR = "../meta_dataset_creation/data/benchmark_results/"
     META_FEATURES_FILE = "../meta_dataset_creation/data/meta_features/meta_features.csv"
-    algorithm = "kprototypes"
-    scores_dir = os.path.join(BENCHMARK_RESULTS_DIR, algorithm, "scores")
-    mixed_meta_df, benchmark_results = load_meta_dataset(META_FEATURES_FILE, scores_dir, "acc")
-    print(mixed_meta_df.head())
-    print(benchmark_results.head())
+    meta_features_df, benchmark_results = load_meta_dataset(META_FEATURES_FILE, BENCHMARK_RESULTS_DIR)
+    # print(meta_features_df.head())
+    # print(benchmark_results)
