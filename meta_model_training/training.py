@@ -8,7 +8,7 @@ from sklearn.model_selection import KFold, cross_val_predict
 from ga_based_optimization import mfs_plus_hpo_knn
 from utils import load_meta_dataset, top_r, lower_bound
 from joblib import Parallel, delayed
-sys.path.append("..")
+sys.path.append(".")
 from meta_model import KNN, create_pipeline
 import time
 
@@ -55,7 +55,7 @@ def grid_search_cv_predict_knn(X, Y, cvi, n_splits=5, verbose=0, n_jobs=-1):
 
 meta_features_df, benchmark_results = load_meta_dataset(META_FEATURES_FILE, BENCHMARK_RESULTS_DIR)
 
-for algorithm in ['kprototypes', 'fasterpam', 'haverage']: #, 'fasterpam', 'haverage'
+for algorithm in ['lshkprototypes']: # 'kprototypes', 'fasterpam', 'haverage'
     for cvi in ["acc", "sil", "ari"]:
         print(algorithm, cvi,
             "##################################################")

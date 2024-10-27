@@ -68,7 +68,7 @@ def load_meta_dataset(meta_features_file, benchmark_results_dir, verbose=1):
                     if data_id not in benchmark_results[algorithm][cvi]:
                         benchmark_results[algorithm][cvi][data_id] = {}
                     benchmark_results[algorithm][cvi][data_id][sim_pair] = max([v["score"] for v in result[sim_pair][cvi] \
-                            if cvi != "sil" or 0.05 <= v["params"]["gamma" if algorithm=="kprototypes" else "alpha"] <= (20 if algorithm=="kprototypes" else 0.95)])
+                            if cvi != "sil" or 0.05 <= v["params"]["gamma" if algorithm=="kprototypes" else ("alpha" if "alpha" in v["params"] else "w")] <= (20 if algorithm=="kprototypes" else 0.95)])
                     # if cvi == "sil":
                     #     print(sim_pair, sorted(result[sim_pair][cvi], reverse=True, key= lambda v: v["score"])[0])
             
