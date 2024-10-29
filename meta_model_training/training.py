@@ -6,7 +6,7 @@ import sys
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold, cross_val_predict
 from ga_based_optimization import mfs_plus_hpo_knn
-from utils import load_meta_dataset, top_r, lower_bound
+from utils import load_meta_dataset, mean_top_r, lower_bound
 from joblib import Parallel, delayed
 sys.path.append(".")
 from meta_model import KNN, create_pipeline
@@ -45,7 +45,7 @@ def grid_search_cv_predict_knn(X, Y, cvi, n_splits=5, verbose=0, n_jobs=-1):
     def evaluate(n_neighbors, metric, w):
         knn = KNN(n_neighbors=n_neighbors, metric=metric, weights=w)
         Y_pred = cross_val_predict(knn, X, Y, cv=n_splits)
-        fitness = top_r(Y, Y_pred, cvi)
+        fitness = mean_top_r(Y, Y_pred, cvi)
         return fitness
     list_params = [(n_neighbors, metric, w) for n_neighbors in parameters["n_neighbors"] for metric in parameters["metric"] for w in parameters["weights"]]
     list_ret = Parallel(n_jobs=n_jobs)(delayed(evaluate)(*t) for t in list_params)
@@ -55,7 +55,7 @@ def grid_search_cv_predict_knn(X, Y, cvi, n_splits=5, verbose=0, n_jobs=-1):
 
 meta_features_df, benchmark_results = load_meta_dataset(META_FEATURES_FILE, BENCHMARK_RESULTS_DIR)
 
-for algorithm in ['lshkprototypes']: # 'kprototypes', 'fasterpam', 'haverage'
+for algorithm in ['kprototypes', 'fasterpam', 'haverage', 'lshkprototypes']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkprototypes'
     for cvi in ["acc", "sil", "ari"]:
         print(algorithm, cvi,
             "##################################################")
@@ -147,7 +147,7 @@ for algorithm in ['lshkprototypes']: # 'kprototypes', 'fasterpam', 'haverage'
             print(model_name)
             obj["train_results"][model_name] = {}
             lmf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X2, Y, lambda yt, yp: top_r(yt, yp, cvi), num_generations=600, pop_size=8)
+                X2, Y, lambda yt, yp: mean_top_r(yt, yp, cvi), num_generations=600, pop_size=8)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 lmf_fs_knn, X2[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = lmf_fs_knn.get_params()
@@ -169,7 +169,7 @@ for algorithm in ['lshkprototypes']: # 'kprototypes', 'fasterpam', 'haverage'
             print(model_name)
             obj["train_results"][model_name] = {}
             amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X, Y, lambda yt, yp: top_r(yt, yp, cvi), num_generations=600, pop_size=8)
+                X, Y, lambda yt, yp: mean_top_r(yt, yp, cvi), num_generations=600, pop_size=8)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 amf_fs_knn, X[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = amf_fs_knn.get_params()

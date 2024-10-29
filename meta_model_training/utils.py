@@ -67,6 +67,7 @@ def load_meta_dataset(meta_features_file, benchmark_results_dir, verbose=1):
                         benchmark_results[algorithm][cvi] = {}
                     if data_id not in benchmark_results[algorithm][cvi]:
                         benchmark_results[algorithm][cvi][data_id] = {}
+                    print(algorithm, cvi, data_id)
                     benchmark_results[algorithm][cvi][data_id][sim_pair] = max([v["score"] for v in result[sim_pair][cvi] \
                             if cvi != "sil" or 0.05 <= v["params"]["gamma" if algorithm=="kprototypes" else ("alpha" if "alpha" in v["params"] else "w")] <= (20 if algorithm=="kprototypes" else 0.95)])
                     # if cvi == "sil":
@@ -84,24 +85,25 @@ def load_meta_dataset(meta_features_file, benchmark_results_dir, verbose=1):
             else:
                 common_dids = common_dids.intersection(set(benchmark_results[algorithm]["acc"].index.to_list()))
 
-    common_dids = np.random.permutation(list(common_dids))
-    common_dids = np.array([did for did in common_dids if did in meta_features_df.index])
-    meta_features_df = meta_features_df.loc[common_dids]
+    # common_dids = np.random.permutation(list(common_dids))
+    # common_dids = np.array([did for did in common_dids if did in meta_features_df.index])
+    # meta_features_df = meta_features_df.loc[common_dids]
     for algorithm in benchmark_results:
         for cvi in benchmark_results[algorithm]:
-            benchmark_results[algorithm][cvi] = benchmark_results[algorithm][cvi].loc[common_dids]
+            dids = np.array([did for did in benchmark_results[algorithm][cvi].index if did in meta_features_df.index])
+            dids = np.random.permutation(dids)
+            benchmark_results[algorithm][cvi] = benchmark_results[algorithm][cvi].loc[dids]
     if verbose > 0: print("DONE")
 
     if verbose > 0: print("3. Filtering for external CVIs...", end="")
     df = pd.concat(
-        [benchmark_results["kprototypes"]["acc"].max(axis=1) >= 0.75, 
-        benchmark_results["fasterpam"]["acc"].max(axis=1) >= 0.75,
-        benchmark_results["haverage"]["acc"].max(axis=1) >= 0.75],
+        [benchmark_results[algorithm]["acc"].max(axis=1) >= 0.75 for algorithm in benchmark_results],
         axis=1
     )
     filtered = df.any(axis=1)
     for algorithm in benchmark_results:
         for cvi in ["acc", "ari", "purity"]:
+            print(algorithm)
             benchmark_results[algorithm][cvi] = benchmark_results[algorithm][cvi][filtered]
     if verbose > 0: 
         print("DONE")
@@ -120,16 +122,77 @@ def lower_bound(cvi):
         raise(Exception(f"Not nown CVI {cvi}, avilable CVIs are 'sil', 'ari', and 'acc'"))
 
 def top_r(yt, yp, cvi, r=1):
+    yt = np.array(yt)
+    yp = np.array(yp)
     lower_bound_cvi = lower_bound(cvi)
-    def _top_r(yt_i, yp_i):
-        top_r_similarity_pairs = np.argsort(-yp_i[yt_i > -1])[:r]
-        score = max(yt_i[yt_i > -1][top_r_similarity_pairs])
-        return (score - lower_bound_cvi) / (max(yt_i) - lower_bound_cvi)
-    return np.mean([_top_r(yt_i, yp[i]) for i, yt_i in enumerate(yt)])
+    if len(yt.shape) == 1:
+        top_r_similarity_pairs = np.argsort(-yp[yt > -1])[:r]
+        score = max(yt[yt > -1][top_r_similarity_pairs])
+        return (score - lower_bound_cvi) / (max(yt) - lower_bound_cvi)
+    elif len(yt.shape) == 2:
+        return np.array([top_r(yt_i, yp[i], cvi, r) for i, yt_i in enumerate(yt)])
+    else:
+        raise(Exception(f"yt.shape expected to be either 1 or 2, got ({yt.shape})"))
+
+def mean_top_r(yt, yp, cvi, r=1):
+    return np.mean(top_r(yt, yp, cvi, r))
+
+def precision_at_r(yt, yp, r=1):
+    yt = np.array(yt)
+    yp = np.array(yp)
+    if len(yt.shape) == 1:
+        top_r_similarity_pairs = np.argsort(-yp[yt > -1])[:r]
+        return sum(yt[top_r_similarity_pairs])/r
+    elif len(yt.shape) == 2:
+        return np.array([precision_at_r(yt_i, yp[i], r) for i, yt_i in enumerate(yt)])
+    else:
+        raise(Exception(f"yt.shape expected to be either 1 or 2, got ({yt.shape})"))
+
+def recall_at_r(yt, yp, r=1):
+    yt = np.array(yt)
+    yp = np.array(yp)
+    if len(yt.shape) == 1:
+        top_r_similarity_pairs = np.argsort(-yp[yt > -1])[:r]
+        return sum(yt[top_r_similarity_pairs])/sum(yt)
+    elif len(yt.shape) == 2:
+        return np.array([recall_at_r(yt_i, yp[i], r) for i, yt_i in enumerate(yt)])
+    else:
+        raise(Exception(f"yt.shape expected to be either 1 or 2, got ({yt.shape})"))
+
+def f1_at_r(yt, yp, r=1):
+    precision = precision_at_r(yt, yp, r)
+    recall = recall_at_r(yt, yp, r)
+    return 2*precision*recall/(precision + recall)
+
+def average_precision_at_r(yt, yp, r=1):
+    yt = np.array(yt)
+    yp = np.array(yp)
+    if len(yt.shape) == 1:
+        ap_at_r = 0
+        top_r_similarity_pairs = np.argsort(-yp[yt > -1])[:r]
+        for k, sp in enumerate(top_r_similarity_pairs):
+            if yt[sp] == 1:
+                # print(sum(yt[top_r_similarity_pairs[:k+1]]), k+1)
+                ap_at_r += sum(yt[top_r_similarity_pairs[:k+1]])/(k+1)
+        ap_at_r /= min(r, sum(yt))
+        return ap_at_r
+    elif len(yt.shape) == 2:
+        return np.array([average_precision_at_r(yt_i, yp[i], r) for i, yt_i in enumerate(yt)])
+    else:
+        raise(Exception(f"yt.shape expected to be either 1 or 2, got ({yt.shape})"))
+
 
 if __name__=="__main__":
-    BENCHMARK_RESULTS_DIR = "../meta_dataset_creation/data/benchmark_results/"
-    META_FEATURES_FILE = "../meta_dataset_creation/data/meta_features/meta_features.csv"
+    BENCHMARK_RESULTS_DIR = "meta_dataset_creation/data/benchmark_results/"
+    META_FEATURES_FILE = "meta_dataset_creation/data/meta_features/meta_features.csv"
     meta_features_df, benchmark_results = load_meta_dataset(META_FEATURES_FILE, BENCHMARK_RESULTS_DIR)
-    # print(meta_features_df.head())
-    # print(benchmark_results)
+    print(meta_features_df.head())
+    print(benchmark_results)
+    # yt = [1, 0.9, 0.6, 0.3, 0.2]
+    # yt = [1 if yti >= 0.9 else 0 for yti in yt]
+    # yp = [1, 0.6, 0.9, 0.3, 0.2]
+    # r = 3
+    # print(f"precision@{r}:", precision_at_r(yt, yp, r=r))
+    # print(f"recall@{r}:", recall_at_r(yt, yp, r=r))
+    # print(f"f1@{r}:", f1_at_r(yt, yp, r=r))
+    # print(f"ap@{r}:", average_precision_at_r(yt, yp, r=r))

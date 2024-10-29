@@ -29,14 +29,14 @@ def compute_clusters(Dnum, Dcat, y, dataset_name=None, n_jobs=1):
         end = time.time()
         return {
             "params": {
-                "gamma": w,
+                "w": w,
                 "n_clusters": n_clusters
             },
             "clusters": clusters,
             "time": end - start
         }
     n_clusters_ground_truth = len(set(y))
-    # clustering_results = Parallel(n_jobs=n_jobs)(delayed(run)(n_clusters_ground_truth, gamma) for gamma in gamma_values)
+    # clustering_results = Parallel(n_jobs=n_jobs)(delayed(run)(n_clusters_ground_truth, w) for w in w_values)
     clustering_results = []
     for w in w_values:
         clustering_results.append(run(n_clusters_ground_truth, w))
