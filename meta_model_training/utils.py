@@ -67,7 +67,6 @@ def load_meta_dataset(meta_features_file, benchmark_results_dir, verbose=1):
                         benchmark_results[algorithm][cvi] = {}
                     if data_id not in benchmark_results[algorithm][cvi]:
                         benchmark_results[algorithm][cvi][data_id] = {}
-                    print(algorithm, cvi, data_id)
                     benchmark_results[algorithm][cvi][data_id][sim_pair] = max([v["score"] for v in result[sim_pair][cvi] \
                             if cvi != "sil" or 0.05 <= v["params"]["gamma" if algorithm=="kprototypes" else ("alpha" if "alpha" in v["params"] else "w")] <= (20 if algorithm=="kprototypes" else 0.95)])
                     # if cvi == "sil":
@@ -103,7 +102,6 @@ def load_meta_dataset(meta_features_file, benchmark_results_dir, verbose=1):
     filtered = df.any(axis=1)
     for algorithm in benchmark_results:
         for cvi in ["acc", "ari", "purity"]:
-            print(algorithm)
             benchmark_results[algorithm][cvi] = benchmark_results[algorithm][cvi][filtered]
     if verbose > 0: 
         print("DONE")

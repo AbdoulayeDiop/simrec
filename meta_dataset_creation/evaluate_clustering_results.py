@@ -36,7 +36,9 @@ def evaluate_clustering_results(data, clustering_results_dir, scores_dir, cache_
         with open(scores_file, "rb") as fp:
             scores = pickle.load(fp)
     
-    for similarity_pair in clustering_results:# [sp for sp in clustering_results if sp[-5:]=="dilca"] The condition is TEMPORARY and should be deleted
+    l = get_valid_similarity_pairs(Xnum, Xcat)
+    l = [v for v in l if v in clustering_results]
+    for similarity_pair in l:# [sp for sp in clustering_results if sp[-5:]=="dilca"] The condition is TEMPORARY and should be deleted
         # print(similarity_pair)
         if similarity_pair not in scores:
             scores[similarity_pair] = {}
