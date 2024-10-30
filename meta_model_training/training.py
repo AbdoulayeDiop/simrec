@@ -61,8 +61,8 @@ def grid_search_cv_predict_knn(X, Y, cvi, n_splits=5, verbose=0, n_jobs=-1):
 
 meta_features_df, benchmark_results = load_meta_dataset(META_FEATURES_FILE, BENCHMARK_RESULTS_DIR)
 
-for algorithm in ['lshkprototypes']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkprototypes'
-    for cvi in ["acc", "ari"]:
+for algorithm in ['haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkprototypes'
+    for cvi in ["acc"]:
         print(algorithm, cvi,
             "##################################################")
         obj = {}
@@ -149,11 +149,11 @@ for algorithm in ['lshkprototypes']: # 'kprototypes', 'fasterpam', 'haverage', '
 
         ###############################################################
         model_name = "LMF-FS-KNN"
-        if model_name not in obj["train_results"]:
+        if model_name not in obj["train_results"] or True:
             print(model_name)
             obj["train_results"][model_name] = {}
             lmf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X2, Y, lambda yt, yp: scorer_func(yt, yp, cvi), num_generations=600, pop_size=8)
+                X2, Y, lambda yt, yp: scorer_func(yt, yp, cvi), num_generations=600, pop_size=16)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 lmf_fs_knn, X2[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = lmf_fs_knn.get_params()
@@ -171,11 +171,11 @@ for algorithm in ['lshkprototypes']: # 'kprototypes', 'fasterpam', 'haverage', '
         model_name = "AMF-FS-KNN"
         
         t0 = time.time()
-        if model_name not in obj["train_results"]:
+        if model_name not in obj["train_results"] or True:
             print(model_name)
             obj["train_results"][model_name] = {}
             amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X, Y, lambda yt, yp: scorer_func(yt, yp, cvi), num_generations=600, pop_size=8)
+                X, Y, lambda yt, yp: scorer_func(yt, yp, cvi), num_generations=600, pop_size=16)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 amf_fs_knn, X[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = amf_fs_knn.get_params()
