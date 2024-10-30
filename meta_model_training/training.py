@@ -153,7 +153,7 @@ for algorithm in ['haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkpr
             print(model_name)
             obj["train_results"][model_name] = {}
             lmf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X2, Y, lambda yt, yp: scorer_func(yt, yp, cvi), num_generations=600, pop_size=16)
+                X2, Y, lambda yt, yp: scorer_func(yt, yp, cvi), num_generations=600, pop_size=32)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 lmf_fs_knn, X2[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = lmf_fs_knn.get_params()
@@ -175,7 +175,7 @@ for algorithm in ['haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkpr
             print(model_name)
             obj["train_results"][model_name] = {}
             amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
-                X, Y, lambda yt, yp: scorer_func(yt, yp, cvi), num_generations=600, pop_size=16)
+                X, Y, lambda yt, yp: scorer_func(yt, yp, cvi), num_generations=600, pop_size=32)
             obj["train_results"][model_name]["pred"] = cross_val_predict(
                 amf_fs_knn, X[:, selected_feats], Y, cv=N_SPLITS, n_jobs=-1)
             obj["train_results"][model_name]["params"] = amf_fs_knn.get_params()
