@@ -1,5 +1,5 @@
 """
-Run K-Prototypes
+Compute distance matrices
 """
 
 # pylint: disable=bare-except
@@ -36,33 +36,46 @@ def compute_distance_matrices(data, output_dir, cache_dir="", n_jobs=1):
     
     for metric in get_valid_similarity_measures(Xnum, data_type="numeric"):
         # print("metric:", metric, end="...")
-        start = time.time()
+        t0 = time.time()
         m = base_metrics.get_metric(metric, caching=True, cache_dir=cache_dir).fit(Xnum, dataset_name=dataset_name)
+        t1 = time.time()
         m.pairwise(Xnum, dataset_name=dataset_name, n_jobs=n_jobs)
-        end = time.time()
-        if metric not in times:
-            times[metric] = end - start
+        t2 = time.time()
         # print("DONE")
+        # if metric not in times:
+        times[metric] = {}
+        times[metric]["fit"] = t1 - t0
+        times[metric]["pairwise"] = t2 - t1
+        times[metric]["total_time"] = t2 - t0
 
     for metric in get_valid_similarity_measures(Xcat, data_type="categorical"):
         # print("metric:", metric, end="...")
-        start = time.time()
+        t0 = time.time()
         m = base_metrics.get_metric(metric, caching=True, cache_dir=cache_dir).fit(Xcat, dataset_name=dataset_name)
+        t1 = time.time()
         m.pairwise(Xcat, dataset_name=dataset_name, n_jobs=n_jobs)
-        end = time.time()
-        if metric not in times:
-            times[metric] = end - start
+        t2 = time.time()
         # print("DONE")
+        # if metric not in times:
+        times[metric] = {}
+        times[metric]["fit"] = t1 - t0
+        times[metric]["pairwise"] = t2 - t1
+        times[metric]["total_time"] = t2 - t0
 
     for metric in get_valid_similarity_measures(Xdummy, data_type="binary"):
         # print("metric:", metric, end="...")
-        start = time.time()
+        t0 = time.time()
         m = base_metrics.get_metric(metric, caching=True, cache_dir=cache_dir).fit(Xdummy, dataset_name=dataset_name)
+        t1 = time.time()
         m.pairwise(Xdummy, dataset_name=dataset_name, n_jobs=n_jobs)
-        end = time.time()
-        if metric not in times:
-            times[metric] = end - start
+        t2 = time.time()
         # print("DONE")
+        # if metric not in times:
+        times[metric] = {}
+        times[metric]["fit"] = t1 - t0
+        times[metric]["pairwise"] = t2 - t1
+        times[metric]["total_time"] = t2 - t0
+
     print()
 
     with open(time_file, "w", encoding="utf-8") as f:
@@ -70,8 +83,9 @@ def compute_distance_matrices(data, output_dir, cache_dir="", n_jobs=1):
 
 if __name__ == "__main__":
     import argparse
+    from datetime import datetime
     parser = argparse.ArgumentParser(
-        description='Run K-Prototypes algorithm on all datasets')
+        description='Compute distance matrices')
     parser.add_argument("-d", "--datasetsdir", default=None)
     parser.add_argument(
         "-o", "--outputdir", help="The directory where results will be saved")
@@ -81,7 +95,8 @@ if __name__ == "__main__":
         "-j", "--jobs", help="The number of concurent workers", default=1)
     args = parser.parse_args()
 
-    print("Running LSH-K-Prototypes algorithm...")
+    print(datetime.now())
+    print("Computing distance matrices...")
     print("dataset directory:", args.datasetsdir)
     print("# of datasets:", len(os.listdir(args.datasetsdir)))
     
@@ -108,7 +123,7 @@ if __name__ == "__main__":
         delayed(compute_distance_matrices)(
             data, args.outputdir,
             cache_dir=args.cachedir,
-            n_jobs=16
+            n_jobs=1
         ) for data in sorted(datasets, key=lambda d: len(d["samples"]) * \
         (len(d["numeric_attributes"])+len(d["categorical_attributes"])))
     )

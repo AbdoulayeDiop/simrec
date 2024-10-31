@@ -5,7 +5,7 @@ from utils import get_valid_similarity_pairs
 from sklearn.preprocessing import minmax_scale
 import os
 
-ALGORITHMS = ["kprototypes", "fasterpam", "haverage"]
+ALGORITHMS = ["kprototypes", "lshkprototypes", "fasterpam", "haverage"]
 CVIS = ["ari", "acc", "sil"]
 
 def load_meta_model(models_dir, algorithm, cvi):
