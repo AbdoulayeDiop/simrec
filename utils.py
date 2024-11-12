@@ -35,7 +35,7 @@ def load_arff_file(f):
     return pd.DataFrame(data)
 
 def load_csv_file(f):
-    return pd.DataFrame(data)
+    return pd.read_csv(f)
 
 def load_data_file(f, file_extension):
     if file_extension==".arff":

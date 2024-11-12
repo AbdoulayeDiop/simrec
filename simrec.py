@@ -14,7 +14,7 @@ def load_meta_model(models_dir, algorithm, cvi):
         meta_model_pipeline = pickle.load(f)
     return meta_model_pipeline
 
-def recommend(Xnum, Xcat, models_dir, algorithm="kprototypes", cvi="ari", k=5):
+def recommend(Xnum, Xcat, models_dir, algorithm="kprototypes", cvi="ari", k=-1):
     assert algorithm in ALGORITHMS, f"algorithm should be from \
         {ALGORITHMS}, got {algorithm} instead"
     assert cvi in CVIS, f"cvi should be from \
