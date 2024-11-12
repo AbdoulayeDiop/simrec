@@ -1,0 +1,714 @@
+{
+    "790": {
+        "recommendation_time": 0.2573983669281006,
+        "clustering_time": 4.746532678604126
+    },
+    "887": {
+        "recommendation_time": 0.018374204635620117,
+        "clustering_time": 7.600653171539307
+    },
+    "928": {
+        "recommendation_time": 0.015634775161743164,
+        "clustering_time": 4.482577085494995
+    },
+    "942": {
+        "recommendation_time": 0.016019821166992188,
+        "clustering_time": 8.73374080657959
+    },
+    "848": {
+        "recommendation_time": 0.015160799026489258,
+        "clustering_time": 3.7275454998016357
+    },
+    "346": {
+        "recommendation_time": 0.015780210494995117,
+        "clustering_time": 52.769983768463135
+    },
+    "685": {
+        "recommendation_time": 0.039804935455322266,
+        "clustering_time": 222.90450358390808
+    },
+    "836": {
+        "recommendation_time": 0.025434017181396484,
+        "clustering_time": 4.570403099060059
+    },
+    "938": {
+        "recommendation_time": 0.014190196990966797,
+        "clustering_time": 4.228999376296997
+    },
+    "784": {
+        "recommendation_time": 0.013524532318115234,
+        "clustering_time": 26.685405254364014
+    },
+    "864": {
+        "recommendation_time": 0.012670755386352539,
+        "clustering_time": 5.031713485717773
+    },
+    "945": {
+        "recommendation_time": 0.018185138702392578,
+        "clustering_time": 9.681877851486206
+    },
+    "804": {
+        "recommendation_time": 0.015037298202514648,
+        "clustering_time": 9.047231674194336
+    },
+    "714": {
+        "recommendation_time": 0.009932518005371094,
+        "clustering_time": 8.283946514129639
+    },
+    "811": {
+        "recommendation_time": 0.051575660705566406,
+        "clustering_time": 16.27317523956299
+    },
+    "891": {
+        "recommendation_time": 0.01073598861694336,
+        "clustering_time": 8.699814319610596
+    },
+    "1055": {
+        "recommendation_time": 0.011256217956542969,
+        "clustering_time": 9.779897451400757
+    },
+    "1455": {
+        "recommendation_time": 0.028136014938354492,
+        "clustering_time": 5.858389377593994
+    },
+    "48": {
+        "recommendation_time": 0.015823841094970703,
+        "clustering_time": 19.64322781562805
+    },
+    "339": {
+        "recommendation_time": 0.014755964279174805,
+        "clustering_time": 11.484767198562622
+    },
+    "890": {
+        "recommendation_time": 0.012994766235351562,
+        "clustering_time": 9.097344636917114
+    },
+    "682": {
+        "recommendation_time": 0.014145851135253906,
+        "clustering_time": 7.3334479331970215
+    },
+    "902": {
+        "recommendation_time": 0.024253368377685547,
+        "clustering_time": 17.98227596282959
+    },
+    "1115": {
+        "recommendation_time": 0.024853229522705078,
+        "clustering_time": 30.928310871124268
+    },
+    "43": {
+        "recommendation_time": 0.016962766647338867,
+        "clustering_time": 70.8244559764862
+    },
+    "854": {
+        "recommendation_time": 0.015819072723388672,
+        "clustering_time": 37.92374300956726
+    },
+    "719": {
+        "recommendation_time": 0.027086973190307617,
+        "clustering_time": 26.866249561309814
+    },
+    "342": {
+        "recommendation_time": 0.03143954277038574,
+        "clustering_time": 7.492211580276489
+    },
+    "477": {
+        "recommendation_time": 0.015436172485351562,
+        "clustering_time": 20.344623804092407
+    },
+    "1057": {
+        "recommendation_time": 0.037152767181396484,
+        "clustering_time": 70.38531255722046
+    },
+    "480": {
+        "recommendation_time": 0.05719923973083496,
+        "clustering_time": 30.695343732833862
+    },
+    "327": {
+        "recommendation_time": 0.06423234939575195,
+        "clustering_time": 195.08078908920288
+    },
+    "944": {
+        "recommendation_time": 0.025462865829467773,
+        "clustering_time": 10.36369013786316
+    },
+    "340": {
+        "recommendation_time": 0.030982255935668945,
+        "clustering_time": 16.993045330047607
+    },
+    "338": {
+        "recommendation_time": 0.04827570915222168,
+        "clustering_time": 44.32243633270264
+    },
+    "446": {
+        "recommendation_time": 0.019969463348388672,
+        "clustering_time": 15.64076828956604
+    },
+    "796": {
+        "recommendation_time": 0.022037029266357422,
+        "clustering_time": 37.378320932388306
+    },
+    "481": {
+        "recommendation_time": 0.021375656127929688,
+        "clustering_time": 9.467174291610718
+    },
+    "941": {
+        "recommendation_time": 0.05349278450012207,
+        "clustering_time": 26.66505789756775
+    },
+    "861": {
+        "recommendation_time": 0.04723763465881348,
+        "clustering_time": 11.802325010299683
+    },
+    "738": {
+        "recommendation_time": 0.07287716865539551,
+        "clustering_time": 11.205803632736206
+    },
+    "343": {
+        "recommendation_time": 0.04561495780944824,
+        "clustering_time": 10.313934564590454
+    },
+    "42585": {
+        "recommendation_time": 0.019452333450317383,
+        "clustering_time": 72.78982257843018
+    },
+    "42167": {
+        "recommendation_time": 0.024431467056274414,
+        "clustering_time": 31.178011417388916
+    },
+    "741": {
+        "recommendation_time": 1.5164878368377686,
+        "clustering_time": 64.2221908569336
+    },
+    "947": {
+        "recommendation_time": 0.03276205062866211,
+        "clustering_time": 187.62928080558777
+    },
+    "949": {
+        "recommendation_time": 0.01827073097229004,
+        "clustering_time": 191.04055333137512
+    },
+    "950": {
+        "recommendation_time": 0.029024362564086914,
+        "clustering_time": 190.83963465690613
+    },
+    "951": {
+        "recommendation_time": 0.0204470157623291,
+        "clustering_time": 187.51604104042053
+    },
+    "451": {
+        "recommendation_time": 0.034337520599365234,
+        "clustering_time": 37.947104692459106
+    },
+    "745": {
+        "recommendation_time": 0.032459259033203125,
+        "clustering_time": 208.0703125
+    },
+    "818": {
+        "recommendation_time": 0.03283500671386719,
+        "clustering_time": 87.13744401931763
+    },
+    "844": {
+        "recommendation_time": 0.05595517158508301,
+        "clustering_time": 122.68965029716492
+    },
+    "1167": {
+        "recommendation_time": 0.015421152114868164,
+        "clustering_time": 33.15960073471069
+    },
+    "10": {
+        "recommendation_time": 0.10854864120483398,
+        "clustering_time": 63.38318157196045
+    },
+    "455": {
+        "recommendation_time": 0.02498316764831543,
+        "clustering_time": 66.20264291763306
+    },
+    "831": {
+        "recommendation_time": 0.028304100036621094,
+        "clustering_time": 81.84694862365723
+    },
+    "40700": {
+        "recommendation_time": 0.024749279022216797,
+        "clustering_time": 67.06991648674011
+    },
+    "186": {
+        "recommendation_time": 0.0252072811126709,
+        "clustering_time": 380.41383385658264
+    },
+    "1121": {
+        "recommendation_time": 0.02760171890258789,
+        "clustering_time": 19.920734643936157
+    },
+    "55": {
+        "recommendation_time": 0.08318328857421875,
+        "clustering_time": 57.49443817138672
+    },
+    "45557": {
+        "recommendation_time": 0.03151106834411621,
+        "clustering_time": 84.50352334976196
+    },
+    "42172": {
+        "recommendation_time": 0.12057352066040039,
+        "clustering_time": 32.30185890197754
+    },
+    "1511": {
+        "recommendation_time": 0.02744889259338379,
+        "clustering_time": 13.973181247711182
+    },
+    "42169": {
+        "recommendation_time": 0.07290053367614746,
+        "clustering_time": 179.61797738075256
+    },
+    "49": {
+        "recommendation_time": 0.06267428398132324,
+        "clustering_time": 91.76192951202393
+    },
+    "786": {
+        "recommendation_time": 0.06872248649597168,
+        "clustering_time": 89.32873177528381
+    },
+    "798": {
+        "recommendation_time": 0.04046797752380371,
+        "clustering_time": 70.47192549705505
+    },
+    "40710": {
+        "recommendation_time": 0.05950522422790527,
+        "clustering_time": 103.51158571243286
+    },
+    "915": {
+        "recommendation_time": 0.04516959190368652,
+        "clustering_time": 79.05011034011841
+    },
+    "1498": {
+        "recommendation_time": 0.03944730758666992,
+        "clustering_time": 37.34704899787903
+    },
+    "1100": {
+        "recommendation_time": 0.04883623123168945,
+        "clustering_time": 104.52074694633484
+    },
+    "1412": {
+        "recommendation_time": 0.0397334098815918,
+        "clustering_time": 18.54828381538391
+    },
+    "9": {
+        "recommendation_time": 0.09808826446533203,
+        "clustering_time": 100.68154406547546
+    },
+    "840": {
+        "recommendation_time": 0.0790395736694336,
+        "clustering_time": 31.32511258125305
+    },
+    "42638": {
+        "recommendation_time": 0.054628610610961914,
+        "clustering_time": 141.2529318332672
+    },
+    "45545": {
+        "recommendation_time": 0.05367422103881836,
+        "clustering_time": 128.45133757591248
+    },
+    "285": {
+        "recommendation_time": 0.45850443840026855,
+        "clustering_time": 608.012713432312
+    },
+    "463": {
+        "recommendation_time": 0.45458173751831055,
+        "clustering_time": 115.07187223434448
+    },
+    "934": {
+        "recommendation_time": 0.3256669044494629,
+        "clustering_time": 340.6594090461731
+    },
+    "1480": {
+        "recommendation_time": 0.051880836486816406,
+        "clustering_time": 47.96578931808472
+    },
+    "839": {
+        "recommendation_time": 0.07197427749633789,
+        "clustering_time": 172.78554558753967
+    },
+    "853": {
+        "recommendation_time": 0.05628466606140137,
+        "clustering_time": 41.50842642784119
+    },
+    "45711": {
+        "recommendation_time": 0.05674266815185547,
+        "clustering_time": 73.24417495727539
+    },
+    "45717": {
+        "recommendation_time": 0.056336402893066406,
+        "clustering_time": 73.21532201766968
+    },
+    "1506": {
+        "recommendation_time": 0.14864063262939453,
+        "clustering_time": 65.62428283691406
+    },
+    "4329": {
+        "recommendation_time": 0.14563941955566406,
+        "clustering_time": 66.49645042419434
+    },
+    "45712": {
+        "recommendation_time": 0.07859587669372559,
+        "clustering_time": 96.23292684555054
+    },
+    "40981": {
+        "recommendation_time": 0.09918022155761719,
+        "clustering_time": 196.2838773727417
+    },
+    "29": {
+        "recommendation_time": 0.10871672630310059,
+        "clustering_time": 83.85347747802734
+    },
+    "44155": {
+        "recommendation_time": 0.10957860946655273,
+        "clustering_time": 83.91846179962158
+    },
+    "825": {
+        "recommendation_time": 0.07854247093200684,
+        "clustering_time": 150.2248547077179
+    },
+    "987": {
+        "recommendation_time": 0.06987285614013672,
+        "clustering_time": 759.1724870204926
+    },
+    "757": {
+        "recommendation_time": 0.07946968078613281,
+        "clustering_time": 154.3924560546875
+    },
+    "307": {
+        "recommendation_time": 0.12056541442871094,
+        "clustering_time": 1605.0546448230743
+    },
+    "35": {
+        "recommendation_time": 0.6963627338409424,
+        "clustering_time": 735.1132287979126
+    },
+    "188": {
+        "recommendation_time": 0.09010910987854004,
+        "clustering_time": 557.9574844837189
+    },
+    "40663": {
+        "recommendation_time": 0.3003702163696289,
+        "clustering_time": 285.68033027648926
+    },
+    "23": {
+        "recommendation_time": 0.3878922462463379,
+        "clustering_time": 666.673290014267
+    },
+    "488": {
+        "recommendation_time": 0.352916955947876,
+        "clustering_time": 3300.988404750824
+    },
+    "6332": {
+        "recommendation_time": 0.2373037338256836,
+        "clustering_time": 166.29084253311157
+    },
+    "940": {
+        "recommendation_time": 0.27701258659362793,
+        "clustering_time": 15571.976987600327
+    },
+    "31": {
+        "recommendation_time": 0.4102516174316406,
+        "clustering_time": 549.8870425224304
+    },
+    "185": {
+        "recommendation_time": 0.45162153244018555,
+        "clustering_time": 972.5604665279388
+    },
+    "183": {
+        "recommendation_time": 2.156071186065674,
+        "clustering_time": 41942.92674994469
+    },
+    "923": {
+        "recommendation_time": 4.937572002410889,
+        "clustering_time": 712.9436521530151
+    },
+    "802": {
+        "recommendation_time": 0.55615234375,
+        "clustering_time": 41497.62278556824
+    },
+    "45562": {
+        "recommendation_time": 0.7455964088439941,
+        "clustering_time": 238.46308207511902
+    },
+    "45077": {
+        "recommendation_time": 0.4939076900482178,
+        "clustering_time": 147.83309936523438
+    },
+    "43897": {
+        "recommendation_time": 0.44539785385131836,
+        "clustering_time": 361.0665407180786
+    },
+    "43896": {
+        "recommendation_time": 0.49841761589050293,
+        "clustering_time": 380.6168808937073
+    },
+    "313": {
+        "recommendation_time": 0.484036922454834,
+        "clustering_time": 19614.83184671402
+    },
+    "1481": {
+        "recommendation_time": 6.53883695602417,
+        "clustering_time": 84130.32711005211
+    },
+    "312": {
+        "recommendation_time": 6.175914287567139,
+        "clustering_time": 432.82909512519836
+    },
+    "881": {
+        "recommendation_time": 6.308177947998047,
+        "clustering_time": 733.7262670993805
+    },
+    "38": {
+        "recommendation_time": 1.2567150592803955,
+        "clustering_time": 932.078019618988
+    },
+    "40701": {
+        "recommendation_time": 2.0363850593566895,
+        "clustering_time": 356.6088330745697
+    },
+    "1235": {
+        "recommendation_time": 5.565100431442261,
+        "clustering_time": 2031.8311791419983
+    },
+    "151": {
+        "recommendation_time": 7.074272394180298,
+        "clustering_time": 609.9036600589752
+    },
+    "40478": {
+        "recommendation_time": 0.9832885265350342,
+        "clustering_time": 1221.086522102356
+    },
+    "40476": {
+        "recommendation_time": 0.9645636081695557,
+        "clustering_time": 1217.2775149345398
+    },
+    "40474": {
+        "recommendation_time": 0.993056058883667,
+        "clustering_time": 1227.8671617507935
+    },
+    "40477": {
+        "recommendation_time": 0.9553868770599365,
+        "clustering_time": 1275.8347623348236
+    },
+    "40475": {
+        "recommendation_time": 1.0898473262786865,
+        "clustering_time": 1207.6853647232056
+    },
+    "40713": {
+        "recommendation_time": 1.4315245151519775,
+        "clustering_time": 454.18579268455505
+    },
+    "40999": {
+        "recommendation_time": 0.866318941116333,
+        "clustering_time": 623.828399181366
+    },
+    "57": {
+        "recommendation_time": 1.2036643028259277,
+        "clustering_time": 5624.982828617096
+    },
+    "40707": {
+        "recommendation_time": 1.3570265769958496,
+        "clustering_time": 1157.5875952243805
+    },
+    "1044": {
+        "recommendation_time": 21.9721257686615,
+        "clustering_time": 3569.8437938690186
+    },
+    "179": {
+        "recommendation_time": 5.402577638626099,
+        "clustering_time": 1694.2041625976562
+    },
+    "41005": {
+        "recommendation_time": 1.6677629947662354,
+        "clustering_time": 2499.3054428100586
+    },
+    "40708": {
+        "recommendation_time": 1.3802244663238525,
+        "clustering_time": 1285.9365720748901
+    },
+    "41007": {
+        "recommendation_time": 1.0701303482055664,
+        "clustering_time": 1183.4744131565094
+    },
+    "1037": {
+        "recommendation_time": 1.5060033798217773,
+        "clustering_time": 1932.6026208400726
+    },
+    "41000": {
+        "recommendation_time": 2.504652261734009,
+        "clustering_time": 2994.751749277115
+    },
+    "42192": {
+        "recommendation_time": 1.6370799541473389,
+        "clustering_time": 433.9603340625763
+    },
+    "40997": {
+        "recommendation_time": 2.4248058795928955,
+        "clustering_time": 3504.20849442482
+    },
+    "1461": {
+        "recommendation_time": 6.052371025085449,
+        "clustering_time": 8020.661091566086
+    },
+    "41004": {
+        "recommendation_time": 2.5084590911865234,
+        "clustering_time": 2681.131468772888
+    },
+    "41002": {
+        "recommendation_time": 3.5891213417053223,
+        "clustering_time": 3451.325539827347
+    },
+    "41003": {
+        "recommendation_time": 3.299370050430298,
+        "clustering_time": 3502.834995031357
+    },
+    "5": {
+        "recommendation_time": 3.0597646236419678,
+        "clustering_time": 3030.71271109581
+    },
+    "41705": {
+        "recommendation_time": 2.684178590774536,
+        "clustering_time": 1969.7653670310974
+    },
+    "43890": {
+        "recommendation_time": 5.40048360824585,
+        "clustering_time": 1693.1758224964142
+    },
+    "1486": {
+        "recommendation_time": 39.90167212486267,
+        "clustering_time": 17974.90536570549
+    },
+    "1116": {
+        "recommendation_time": 16.828603267669678,
+        "clustering_time": 30811.762417554855
+    },
+    "41006": {
+        "recommendation_time": 3.114513874053955,
+        "clustering_time": 6648.344463348389
+    },
+    "1018": {
+        "recommendation_time": 6.520853519439697,
+        "clustering_time": 5004.956083059311
+    },
+    "41143": {
+        "recommendation_time": 3.569643497467041,
+        "clustering_time": 8936.590984344482
+    },
+    "45036": {
+        "recommendation_time": 10.169564723968506,
+        "clustering_time": 918.7203853130341
+    },
+    "42252": {
+        "recommendation_time": 11.31267237663269,
+        "clustering_time": 1183.0064888000488
+    },
+    "1002": {
+        "recommendation_time": 4.417964220046997,
+        "clustering_time": 5920.466268539429
+    },
+    "44038": {
+        "recommendation_time": 10.939979791641235,
+        "clustering_time": 2488.540908098221
+    },
+    "43947": {
+        "recommendation_time": 2.548335552215576,
+        "clustering_time": 2532.445376396179
+    },
+    "43892": {
+        "recommendation_time": 1.5052800178527832,
+        "clustering_time": 1287.4726173877716
+    },
+    "45547": {
+        "recommendation_time": 4.550718307495117,
+        "clustering_time": 1476.3105897903442
+    },
+    "1119": {
+        "recommendation_time": 5.332401275634766,
+        "clustering_time": 2072.173809528351
+    },
+    "45568": {
+        "recommendation_time": 2.4576613903045654,
+        "clustering_time": 1921.160543680191
+    },
+    "45553": {
+        "recommendation_time": 7.693811655044556,
+        "clustering_time": 1135.7440025806427
+    },
+    "44162": {
+        "recommendation_time": 5.050180435180664,
+        "clustering_time": 5502.1971571445465
+    },
+    "45560": {
+        "recommendation_time": 5.354533910751343,
+        "clustering_time": 1918.2635884284973
+    },
+    "45648": {
+        "recommendation_time": 2.8474643230438232,
+        "clustering_time": 1232.5086064338684
+    },
+    "45703": {
+        "recommendation_time": 6.6493706703186035,
+        "clustering_time": 1299.6651384830475
+    },
+    "41001": {
+        "recommendation_time": 9.707397699356079,
+        "clustering_time": 6321.322445869446
+    },
+    "45656": {
+        "recommendation_time": 5.50626277923584,
+        "clustering_time": 1747.9403944015503
+    },
+    "155": {
+        "recommendation_time": 5.111341714859009,
+        "clustering_time": 21228.897025585175
+    },
+    "1169": {
+        "recommendation_time": 4.771888732910156,
+        "clustering_time": 18669.03796339035
+    },
+    "42206": {
+        "recommendation_time": 6.779689311981201,
+        "clustering_time": 11112.059421300888
+    },
+    "40978": {
+        "recommendation_time": 124.84494423866272,
+        "clustering_time": 20482.4701795578
+    },
+    "43958": {
+        "recommendation_time": 3.899576187133789,
+        "clustering_time": 5900.885661840439
+    },
+    "180": {
+        "recommendation_time": 9.851874828338623,
+        "clustering_time": 11654.273220539093
+    },
+    "1483": {
+        "recommendation_time": 5.272947072982788,
+        "clustering_time": 54736.21008706093
+    },
+    "1240": {
+        "recommendation_time": 7.7567267417907715,
+        "clustering_time": 13878.96451330185
+    },
+    "40536": {
+        "recommendation_time": 16.51883101463318,
+        "clustering_time": 46646.72859573364
+    },
+    "40672": {
+        "recommendation_time": 7.851787090301514,
+        "clustering_time": 26833.26469874382
+    },
+    "45067": {
+        "recommendation_time": 3.521519660949707,
+        "clustering_time": 14376.510714054108
+    },
+    "149": {
+        "recommendation_time": 8.797134160995483,
+        "clustering_time": 25897.971502304077
+    },
+    "1110": {
+        "recommendation_time": 11.591346740722656,
+        "clustering_time": 28592.316754102707
+    }
+}

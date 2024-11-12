@@ -169,3 +169,5 @@ datasets/
 tmp/
 experiments/
 datasets_test/
+clustering_results/
+distance_matrices_computation_times/
