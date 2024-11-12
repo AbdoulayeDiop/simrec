@@ -76,8 +76,6 @@ def compute_distance_matrices(data, output_dir, cache_dir="", n_jobs=1):
         times[metric]["pairwise"] = t2 - t1
         times[metric]["total_time"] = t2 - t0
 
-    print()
-
     with open(time_file, "w", encoding="utf-8") as f:
         json.dump(times, f, indent=4, ensure_ascii=False)
 
