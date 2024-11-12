@@ -50,19 +50,19 @@ We use the function `recommend(...)` from the `simrec` module to perform the rec
 
 ## Organization of the repository
 
-:file_folder:simrec
-┣ :file_folder:[clustering_algorithms](clustering_algorithms/)
-┣ :file_folder:[example_datasets](example_datasets/)
-┣ :file_folder:[loading_datasets](loading_datasets/)
-┣ :file_folder:[meta_dataset_creation](meta_dataset_creation/)
-┣ :file_folder:[meta_model_training](meta_model_training/)
-┣ :file_folder:[metrics](metrics/)
-┣ :file_folder:[paper](paper/)
-┣ :notebook:example.ipynb
-┣ :page_facing_up:meta_features.py
-┣ :page_facing_up:meta_model.py
-┣ :page_facing_up:simrec.py
-┣ :page_facing_up:utils.py
+📁 simrec  
+├── 📁 clustering_algorithms/  
+├── 📁 example_datasets/  
+├── 📁 loading_datasets/  
+├── 📁 meta_dataset_creation/  
+├── 📁 meta_model_training/  
+├── 📁 metrics/  
+├── 📁 paper/  
+├── 📓 example.ipynb  
+├── 📄 meta_features.py  
+├── 📄 meta_model.py  
+├── 📄 simrec.py  
+└── 📄 utils.py  
 
 - The `clustering_algorithms` folder contains the implementations of the considered MDC algorithms.
 - The `example_datasets` folder contains some example mixed datasets that can be used for illustration purposes and to get started with the system.
