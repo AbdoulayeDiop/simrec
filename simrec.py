@@ -1,9 +1,7 @@
-import pickle
 from meta_features import compute_meta_features
 import numpy as np
 from utils import get_valid_similarity_pairs, load_meta_model
 from sklearn.preprocessing import minmax_scale
-import os
 
 ALGORITHMS = ["kprototypes", "lshkprototypes", "fasterpam", "haverage"]
 CVIS = ["ari", "acc", "sil"]
@@ -26,6 +24,8 @@ def recommend(Xnum, Xcat, models_dir, algorithm="kprototypes", cvi="ari", k=-1):
 
 if __name__ == "__main__":
     import argparse
+    import pickle
+    
     parser = argparse.ArgumentParser(description='Compute meta-features')
     parser.add_argument("-d", "--dataset", help="Path to the dataset", required=True)
     parser.add_argument("-m", "--modelsdir", help="Path to the models directory", required=True)
