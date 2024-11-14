@@ -61,8 +61,8 @@ def grid_search_cv_predict_knn(X, Y, cvi, n_splits=5, verbose=0, n_jobs=-1):
 
 meta_features_df, benchmark_results = load_meta_dataset(META_FEATURES_FILE, BENCHMARK_RESULTS_DIR)
 
-for algorithm in ['haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkprototypes'
-    for cvi in ["acc"]:
+for algorithm in ['kprototypes', 'lshkprototypes', 'fasterpam', 'haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkprototypes'
+    for cvi in ['sil', 'ari', 'acc']:
         print(algorithm, cvi,
             "##################################################")
         obj = {}
@@ -112,8 +112,8 @@ for algorithm in ['haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkpr
             print(f"mean {cvi}:",  score)
             print()
 
-        with open(filename, "wb") as f:
-            pickle.dump(obj, f)
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
 
         ###############################################################
         model_name = "LMF-KNN"
@@ -128,8 +128,8 @@ for algorithm in ['haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkpr
             print(f"mean {cvi}:",  score)
             print()
 
-        with open(filename, "wb") as f:
-            pickle.dump(obj, f)
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
 
         ###############################################################
         model_name = "AMF-KNN"
@@ -144,12 +144,12 @@ for algorithm in ['haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkpr
             print(f"mean {cvi}:",  score)
             print()
 
-        with open(filename, "wb") as f:
-            pickle.dump(obj, f)
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
 
         ###############################################################
         model_name = "LMF-FS-KNN"
-        if model_name not in obj["train_results"] or True:
+        if model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             lmf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
@@ -164,14 +164,14 @@ for algorithm in ['haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkpr
             print(f"mean {cvi}:",  score)
             print()
 
-        with open(filename, "wb") as f:
-            pickle.dump(obj, f)
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
 
         ###############################################################
         model_name = "AMF-FS-KNN"
         
         t0 = time.time()
-        if model_name not in obj["train_results"] or True:
+        if model_name not in obj["train_results"]:
             print(model_name)
             obj["train_results"][model_name] = {}
             amf_fs_knn, selected_feats, n_neighbors, metric, w, ga_instance = mfs_plus_hpo_knn(
@@ -186,8 +186,8 @@ for algorithm in ['haverage']: # 'kprototypes', 'fasterpam', 'haverage', 'lshkpr
             print("params:", obj["train_results"][model_name]["params"])
             print(f"mean {cvi}:",  score)
 
-        with open(filename, "wb") as f:
-            pickle.dump(obj, f)
+        # with open(filename, "wb") as f:
+        #     pickle.dump(obj, f)
 
         print("Final training and saving...")
         pipeline = create_pipeline(

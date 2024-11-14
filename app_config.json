@@ -1,0 +1,53 @@
+{
+    "algorithms": {
+        "kprototypes": {
+            "id": "kprototypes",
+            "name": "K-Prototypes",
+            "reduced_name": "K-PROTO"
+        },
+        "lshkprototypes": {
+            "id": "lshkprototypes",
+            "name": "LSH-K-Prototypes",
+            "reduced_name": "LSH-KP"
+        },
+        "fasterpam": {
+            "id": "fasterpam",
+            "name": "K-Medoids (PAM)",
+            "reduced_name": "K-MED"
+        },
+        "haverage": {
+            "id": "haverage",
+            "name": "Hierarchical Clustering (with average linkage)",
+            "reduced_name": "H-AVG"
+        }
+    },
+
+    "cvis": {
+        "sil": {
+            "id": "sil",
+            "name": "Silhouette",
+            "reduced_name": "SIL"
+        },
+        "ari": {
+            "id": "ari",
+            "name": "Adjusted Rand Index",
+            "reduced_name": "ARI"
+        },
+        "acc": {
+            "id": "acc",
+            "name": "Clustering Accuracy",
+            "reduced_name": "CA"
+        }
+    },
+
+    "dataset_types": ["arff", "csv"],
+    "models_dir": "C:\\Users\\abdou\\Documents\\Workspace\\Recherche\\simrec-for-mdc\\meta_model_training\\data\\saved_models",
+    "min_recommendations": 5,
+    "n_recommendations": 10,
+    "max_recommendations": {
+        "kprototypes": 130,
+        "lshkprototypes": 60,
+        "fasterpam": 130,
+        "haverage": 130
+    }
+}
