@@ -12,12 +12,14 @@ import time
 import numpy as np
 from joblib import Parallel, delayed
 from sklearn.preprocessing import OneHotEncoder, minmax_scale
+import cvi
 
-sys.path.append(".")
+FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(FILE_DIR)
+sys.path.append(PARENT_DIR)
+
 from utils import get_valid_similarity_pairs
 from metrics import base_metrics
-from sklearn.preprocessing import OrdinalEncoder
-from meta_dataset_creation import cvi
 
 def evaluate_clustering_results(data, clustering_results_dir, scores_dir, cache_dir="", n_jobs=1):
     Xnum = minmax_scale(data["Xnum"])

@@ -14,11 +14,12 @@ import numpy as np
 from joblib import Parallel, delayed
 from sklearn.preprocessing import OneHotEncoder, minmax_scale
 
-sys.path.append(".")
+FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(FILE_DIR)
+sys.path.append(PARENT_DIR)
+
 from utils import get_valid_similarity_measures
 from metrics import base_metrics
-from clustering_algorithms import kprototypes
-from sklearn.preprocessing import OrdinalEncoder
 
 def compute_distance_matrices(data, output_dir, cache_dir="", n_jobs=1):
     Xnum = minmax_scale(data["Xnum"])

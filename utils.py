@@ -1,10 +1,11 @@
 from metrics import base_metrics
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, minmax_scale
 from scipy.io.arff import loadarff
 import pandas as pd
 import numpy as np
 import os
 import pickle
+from config import ALGORITHMS, CVIS, MODELS_DIR
 
 def get_valid_similarity_measures(X, data_type="numeric"):
     l = []
@@ -31,21 +32,6 @@ def get_valid_similarity_pairs(Xnum, Xcat):
         for bin_metric in get_valid_similarity_measures(Xdummy, data_type="binary"):
             l.append(f"{num_metric}_{bin_metric}")
     return l
-
-def load_arff_file(f):
-    data, _ = loadarff(f)
-    return pd.DataFrame(data)
-
-def load_csv_file(f):
-    return pd.read_csv(f)
-
-def load_data_file(f, file_extension):
-    if file_extension==".arff":
-        return load_arff_file(f)
-    if file_extension==".csv":
-        return load_csv_file(f)
-    else:
-        raise(Exception(f"Not known file extension {file_extension}"))
 
 def handle_na(frame, drop_first=True, min_samples_after_drop=0.8, max_nan_per_attributes=0.5):
     df = frame.copy()
@@ -76,8 +62,48 @@ def handle_na(frame, drop_first=True, min_samples_after_drop=0.8, max_nan_per_at
     assert (df.isna().sum().sum() == 0)
     return df
 
-def load_meta_model(models_dir, algorithm, cvi):
-    path = os.path.join(models_dir, f"meta_model_pipeline_{algorithm}_{cvi}.pickle")
+def preprocess(X):
+    X = handle_na(X)
+    X = X.loc[:, (X != X.iloc[0]).any()]
+    num_columns = X.select_dtypes(include=["number"]).columns
+    cat_columns = X.select_dtypes(exclude=["number"]).columns
+    if len(num_columns) == 0 or len(cat_columns) == 0:
+        raise(Exception(f'The dataset is suposed to be mixed. Got {len(num_columns)} numerical attribute(s) and {len(cat_columns)} categorical one (ones)'))
+    else:
+        Xnum = X.loc[:, num_columns]
+        Xnum = Xnum.to_numpy()
+        Xcat = X.loc[:, cat_columns]
+        for col in Xcat.columns:
+            Xcat.loc[:, col] = pd.Categorical(Xcat.loc[:, col]).codes
+        Xcat = Xcat.to_numpy(dtype=int)
+        Xnum = minmax_scale(Xnum)
+    return Xnum, Xcat, num_columns, cat_columns
+
+def load_arff_file(f):
+    data, _ = loadarff(f)
+    return pd.DataFrame(data)
+
+def load_csv_file(f):
+    return pd.read_csv(f)
+
+def load_data_file(f, file_extension=None):
+    if isinstance(f, str) and file_extension is None:
+        _, file_extension = os.path.splitext(f)
+    elif file_extension is None:
+        raise(Exception(f"Parameter file_extension is required when f is not a file path"))
+    if file_extension==".arff":
+        return load_arff_file(f)
+    if file_extension==".csv":
+        return load_csv_file(f)
+    else:
+        raise(Exception(f"Not known file extension {file_extension}"))
+
+def load_meta_model(algorithm, cvi):
+    if algorithm not in ALGORITHMS:
+        raise(Exception(f"Not known algorithm: {algorithm}"))
+    if cvi not in CVIS:
+        raise(Exception(f"Not known CVI: {cvi}"))
+    path = os.path.join(MODELS_DIR, f"meta_model_pipeline_{algorithm}_{cvi}.pickle")
     with open(path, "rb") as f:
         meta_model_pipeline = pickle.load(f)
     return meta_model_pipeline
