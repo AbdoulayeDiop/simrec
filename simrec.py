@@ -1,18 +1,12 @@
 import pickle
 from meta_features import compute_meta_features
 import numpy as np
-from utils import get_valid_similarity_pairs
+from utils import get_valid_similarity_pairs, load_meta_model
 from sklearn.preprocessing import minmax_scale
 import os
 
 ALGORITHMS = ["kprototypes", "lshkprototypes", "fasterpam", "haverage"]
 CVIS = ["ari", "acc", "sil"]
-
-def load_meta_model(models_dir, algorithm, cvi):
-    path = os.path.join(models_dir, f"meta_model_pipeline_{algorithm}_{cvi}.pickle")
-    with open(path, "rb") as f:
-        meta_model_pipeline = pickle.load(f)
-    return meta_model_pipeline
 
 def recommend(Xnum, Xcat, models_dir, algorithm="kprototypes", cvi="ari", k=-1):
     assert algorithm in ALGORITHMS, f"algorithm should be from \

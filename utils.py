@@ -73,3 +73,9 @@ def handle_na(frame, drop_first=True, min_samples_after_drop=0.8, max_nan_per_at
         df = df.fillna(filling_dict)
     assert (df.isna().sum().sum() == 0)
     return df
+
+def load_meta_model(models_dir, algorithm, cvi):
+    path = os.path.join(models_dir, f"meta_model_pipeline_{algorithm}_{cvi}.pickle")
+    with open(path, "rb") as f:
+        meta_model_pipeline = pickle.load(f)
+    return meta_model_pipeline
