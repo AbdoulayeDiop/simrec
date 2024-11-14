@@ -41,7 +41,6 @@
     },
 
     "dataset_types": ["arff", "csv"],
-    "models_dir": "C:\\Users\\abdou\\Documents\\Workspace\\Recherche\\simrec-for-mdc\\meta_model_training\\data\\saved_models",
     "min_recommendations": 5,
     "n_recommendations": 10,
     "max_recommendations": {
