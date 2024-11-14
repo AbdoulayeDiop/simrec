@@ -13,11 +13,13 @@ import numpy as np
 from joblib import Parallel, delayed
 from sklearn.preprocessing import OneHotEncoder, minmax_scale
 
-sys.path.append(".")
+FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(FILE_DIR)
+sys.path.append(PARENT_DIR)
+
 from utils import get_valid_similarity_pairs
 from metrics import base_metrics
 from clustering_algorithms import kprototypes
-from sklearn.preprocessing import OrdinalEncoder
 
 gamma_values = np.concatenate((np.linspace(0, 0.1, 10), np.linspace(
     0.1, 1, 10), np.arange(2, 10), np.arange(10, 101, 10)))

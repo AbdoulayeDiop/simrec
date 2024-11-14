@@ -2,8 +2,13 @@ import numpy as np
 import pygad
 from sklearn.model_selection import cross_val_predict, KFold
 from utils import top_r
+import os
 import sys
-sys.path.append(".")
+
+FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(FILE_DIR)
+sys.path.append(PARENT_DIR)
+
 from meta_model import KNN
 
 def mfs_plus_hpo_knn(X, Y, scorer_func, n_neighbors_values=None, metrics=None, weights=None, num_generations=100,

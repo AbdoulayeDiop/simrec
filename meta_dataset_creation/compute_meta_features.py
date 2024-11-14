@@ -13,7 +13,11 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from sklearn.preprocessing import minmax_scale
-sys.path.append("..")
+
+FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(FILE_DIR)
+sys.path.append(PARENT_DIR)
+
 from meta_features import compute_meta_features, ALL_ATTRIBUTE_NAMES
 
 parser = argparse.ArgumentParser(description='Compute meta-features')

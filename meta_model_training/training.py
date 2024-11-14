@@ -8,9 +8,13 @@ from sklearn.model_selection import KFold, cross_val_predict
 from ga_based_optimization import mfs_plus_hpo_knn
 from utils import load_meta_dataset, mean_top_r, lower_bound, ndcg
 from joblib import Parallel, delayed
-sys.path.append(".")
-from meta_model import KNN, create_pipeline
 import time
+
+FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(FILE_DIR)
+sys.path.append(PARENT_DIR)
+
+from meta_model import KNN, create_pipeline
 
 proposed_attributes_statistics = [
     f"{p}_{name}" for p in ["min", "q1", "mean", "q3", "max"] for name in [

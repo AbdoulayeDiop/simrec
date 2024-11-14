@@ -8,11 +8,16 @@ import traceback
 import numpy as np
 from kmedoids import alternating, fasterpam
 from sklearn.cluster import AgglomerativeClustering, spectral_clustering as sc
+import os
 import sys
-sys.path.append("clustering_algorithms/")
+
+FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(FILE_DIR)
+sys.path.append(PARENT_DIR)
+
 from metrics import base_metrics
-from kprototypes import KPrototypes as KP # pylint: disable=import-error
-from LSHkRepresentatives.LSHkPrototypes import LSHkPrototypes
+from clustering_algorithms.kprototypes import KPrototypes as KP # pylint: disable=import-error
+from clustering_algorithms.LSHkRepresentatives.LSHkPrototypes import LSHkPrototypes
 
 
 def haverage(Dnum, Dcat, w, n_clusters):
@@ -118,7 +123,7 @@ def check_metric(metric):
 if __name__ == "__main__":
     import pickle
     import timeit
-    with open("datasets/10.pickle", "rb") as fp: 
+    with open(os.path.join(PARENT_DIR, "example_datasets/10.pickle"), "rb") as fp: 
         data = pickle.load(fp)
     Xnum = data["Xnum"]
     Xcat = data["Xcat"]

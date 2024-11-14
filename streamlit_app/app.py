@@ -4,16 +4,18 @@ import os
 import numpy as np
 import pandas as pd
 import altair as alt
-from utils import load_data_file, handle_na
+import sys
 from io import StringIO
-from simrec import recommend
 from sklearn.preprocessing import minmax_scale
-from dotenv import load_dotenv
 
-# Load environment variables from the .env file (if present)
-load_dotenv()
+FILE_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = os.path.dirname(FILE_DIR)
 
-CONFIG_FILE = "app_config.json"
+sys.path.append(PARENT_DIR)
+from utils import load_data_file, handle_na
+from simrec import recommend
+
+CONFIG_FILE = os.path.join(FILE_DIR, "config.json")
 with open(CONFIG_FILE, "r") as fp:
     config = json.load(fp)
 
@@ -30,7 +32,7 @@ def click_submit():
 
 def load_data():
     if st.session_state.uploaded_file is not None:
-        filename, file_extension = os.path.splitext(st.session_state.uploaded_file.name)
+        _, file_extension = os.path.splitext(st.session_state.uploaded_file.name)
         f = StringIO(st.session_state.uploaded_file.getvalue().decode("utf-8"))
         st.session_state.X = load_data_file(f, file_extension)
 
@@ -91,7 +93,7 @@ if submit:
                 Xcat.loc[:, col] = pd.Categorical(Xcat.loc[:, col]).codes
             Xcat = Xcat.to_numpy(dtype=int)
             Xnum = minmax_scale(Xnum)
-            recommendation = recommend(Xnum, Xcat, os.getenv('models_dir'), algorithm=algorithm, cvi=cvi)
+            recommendation = recommend(Xnum, Xcat, algorithm=algorithm, cvi=cvi)
             recommendation = pd.DataFrame(recommendation, columns=["similarity_pair", "score"])
             st.session_state.recommendation = recommendation
 
