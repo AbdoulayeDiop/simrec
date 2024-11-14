@@ -8,6 +8,10 @@ from utils import load_data_file, handle_na
 from io import StringIO
 from simrec import recommend
 from sklearn.preprocessing import minmax_scale
+from dotenv import load_dotenv
+
+# Load environment variables from the .env file (if present)
+load_dotenv()
 
 CONFIG_FILE = "app_config.json"
 with open(CONFIG_FILE, "r") as fp:
@@ -87,7 +91,7 @@ if submit:
                 Xcat.loc[:, col] = pd.Categorical(Xcat.loc[:, col]).codes
             Xcat = Xcat.to_numpy(dtype=int)
             Xnum = minmax_scale(Xnum)
-            recommendation = recommend(Xnum, Xcat, config["models_dir"], algorithm=algorithm, cvi=cvi)
+            recommendation = recommend(Xnum, Xcat, os.getenv('models_dir'), algorithm=algorithm, cvi=cvi)
             recommendation = pd.DataFrame(recommendation, columns=["similarity_pair", "score"])
             st.session_state.recommendation = recommendation
 
