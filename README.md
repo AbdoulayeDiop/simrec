@@ -21,13 +21,12 @@ import numpy as np
 Xnum = np.random.rand(200, 10)
 Xcat = np.random.randint(8, size=(200, 5))
 
-# define the models directory, algorithm and the CVI to be optimized.
-models_dir = "meta_model_training/data/saved_models/"
+# define the algorithm and the CVI to be optimized.
 algorithm = "kprototypes"
 cvi = "acc"
 
 # recommend the 5 top performing similarity pairs
-recommendation = simrec.recommend(Xnum, Xcat, models_dir, algorithm=algorithm, cvi=cvi, k=5)
+recommendation = simrec.recommend(Xnum, Xcat, algorithm=algorithm, cvi=cvi, k=5)
 
 # show the recommendation
 print(recommendation)
