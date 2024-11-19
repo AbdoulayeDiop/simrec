@@ -1,0 +1,6 @@
+numpy
+pandas
+pygad
+scikit_learn==1.3.2
+scipy
+streamlit
