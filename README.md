@@ -8,7 +8,7 @@ SIMREC is composed of two modules:
 1. A meta-feature extraction module that computes the meta-feature vector of the input dataset.
 2. A ranking module that takes as input the meta-feature vector computed by the meta-feature extraction module and predicts the ranking of the similarity measure pairs for the input algorithm and CVI.
 
-For more information about how SIMREC works, please refer to the paper [here]().
+For more information about how SIMREC works, please refer to the paper [here](https://dl.acm.org/doi/10.1145/3676288.3676302).
 
 ## A simple example
 To get started, here is an example of using SIMREC to recommend suitable similarity measure pairs on a new dataset for the K-Prototypes algorithm and the clustering accuracy.
